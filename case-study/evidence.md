@@ -6,13 +6,23 @@
 
 ## 1. 项目规模与开发周期
 
+开发期提交数（截至最后一次功能提交 `d36c21b`）：
+
+```bash
+git log --oneline d36c21b | wc -l
+```
+
+结果：`11`。时间跨度 **2026-06-12 15:59 → 2026-08-13 13:07**，共 62 天。
+
+> 用 `d36c21b` 而非 `HEAD` 计数，是因为本案例自身的归档提交会排在它之后；这样引用不会随文档提交而失效。
+
+完整时间线（归档提交会排在最前）：
+
 ```bash
 git log --reverse --format='%ad | %s' --date=format:'%Y-%m-%d %H:%M'
 ```
 
-结果：11 个 commit，时间跨度 **2026-06-12 15:59 → 2026-08-13 13:07**，共 62 天。
-
-其中前三个 commit 集中在 9 分钟内：
+开发期的前三个提交集中在 9 分钟内：
 
 ```
 2026-06-12 15:59 | Initial commit: 拾词 Chrome 扩展 v1.1.0
@@ -20,23 +30,23 @@ git log --reverse --format='%ad | %s' --date=format:'%Y-%m-%d %H:%M'
 2026-06-12 16:08 | Add screenshots and update README with feature images
 ```
 
-代码规模：
+代码规模（JavaScript 与配置）：
 
 ```bash
 wc -l manifest.json background/*.js content/*.js popup/*.js options/*.js words/*.js
 ```
 
-结果：约 4500 行原生 JavaScript，无框架依赖。
+结果：**2972 行**。计入页面与样式（`content/* popup/* options/* words/*`）后为 **5386 行**，全部原生实现，无框架依赖。
 
 ---
 
 ## 2. `v2/` 与原版代码逐字节相同
 
 ```bash
-diff -rq . v2/ --exclude=manifest.json
+for d in background content icons options popup words; do diff -rq "$d" "v2/$d"; done
 ```
 
-结果：**无输出** —— 除 manifest 外所有文件完全一致。
+结果：**无输出**（退出码 0）—— 六个代码目录逐字节相同。
 
 ```bash
 diff manifest.json v2/manifest.json
@@ -127,7 +137,7 @@ grep -rn "phonetic" --include="*.js" background/ content/ popup/ options/ words/
   const html = buildWordHtml(wordsToDownload);
   ```
 
-- **导入**（`words/index.js:548` 的 `parseImportText`）只支持 JSON 与行分隔（`|`、制表符、` - `、` — `），无逗号解析。
+- **导入**（`words/index.js:549` 的 `parseImportText`）只支持 JSON 与行分隔（`|`、制表符、` - `、` — `），无逗号解析。
 
 全仓库检索 `csv`（不区分大小写），唯一命中是宣传页里的一句文案 `promo/04-config.html:141`，属于营销文字，非实现。
 
