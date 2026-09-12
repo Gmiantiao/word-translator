@@ -1,0 +1,463 @@
+/* WordPicker - Content Script Styles */
+
+/* Translation Popup */
+.wp-popup {
+  position: absolute;
+  z-index: 2147483647;
+  min-width: 180px;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: #1a1a2e;
+  padding: 0;
+  overflow: hidden;
+  animation: wp-fadeIn 0.15s ease-out;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+@keyframes wp-fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wp-popup-header {
+  padding: 10px 14px 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wp-popup-word {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a2e;
+}
+
+.wp-popup-phonetic {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+
+.wp-popup-translation {
+  padding: 6px 14px 10px;
+  font-size: 13px;
+  color: #444;
+  line-height: 1.5;
+}
+
+.wp-popup-footer {
+  padding: 4px 10px 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wp-collect-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.wp-collect-btn:hover {
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.wp-collect-btn.wp-collected {
+  color: #7C3AED;
+}
+
+.wp-collect-btn.wp-collected:hover {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.08);
+}
+
+/* Note button */
+.wp-note-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.wp-note-btn:hover {
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.wp-note-btn.wp-has-note {
+  color: #7C3AED;
+}
+
+/* Note display (shown inline when note exists) */
+.wp-popup-note-display {
+  padding: 0 14px 4px;
+  font-size: 12px;
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.06);
+  margin: 0 14px 6px;
+  border-radius: 4px;
+  padding: 4px 10px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* Note editor area */
+.wp-popup-note-area {
+  padding: 0 14px 8px;
+}
+
+.wp-note-editor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wp-note-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+  background: #f8f8f8;
+  min-width: 0;
+}
+
+.wp-note-input:focus {
+  border-color: #7C3AED;
+  background: #fff;
+}
+
+.wp-note-confirm,
+.wp-note-cancel {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: all 0.1s;
+  line-height: 1;
+}
+
+.wp-note-confirm {
+  color: #10b981;
+}
+
+.wp-note-confirm:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.wp-note-cancel {
+  color: #999;
+}
+
+.wp-note-cancel:hover {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.08);
+}
+
+/* Note delete button (on note display) */
+.wp-note-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  margin-left: 4px;
+  font-size: 14px;
+  line-height: 1;
+  color: #999;
+  border-radius: 3px;
+  transition: all 0.1s;
+  vertical-align: middle;
+}
+
+.wp-note-delete:hover {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.1);
+}
+
+/* Loading spinner */
+.wp-loading {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ddd;
+  border-top-color: #7C3AED;
+  border-radius: 50%;
+  animation: wp-spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes wp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Purple highlight for collected words */
+.wp-highlight {
+  text-decoration: underline;
+  text-decoration-color: var(--wp-highlight-color, #7C3AED);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.wp-highlight:hover {
+  background-color: rgba(124, 58, 237, 0.06);
+}
+
+/* Tooltip on hover */
+.wp-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2147483646;
+  animation: wp-fadeIn 0.1s ease-out;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wp-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a1a2e;
+}
+
+/* Ask AI Section */
+.wp-ask-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin: 0;
+  padding: 0;
+}
+
+.wp-ask-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #888;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.wp-ask-toggle:hover {
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.wp-ask-toggle.wp-ask-expanded {
+  color: #7C3AED;
+}
+
+.wp-ask-body {
+  padding: 0 10px 8px;
+  animation: wp-fadeIn 0.15s ease-out;
+}
+
+.wp-ask-answer {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #333;
+  background: #f5f3ff;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  word-break: break-word;
+}
+
+.wp-ask-answer.wp-ask-error {
+  color: #e53e3e;
+  background: #fff5f5;
+  border-color: rgba(229, 62, 62, 0.15);
+}
+
+.wp-ask-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wp-ask-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+  background: #fafafa;
+  color: #333;
+  min-width: 0;
+  transition: border-color 0.15s ease;
+}
+
+.wp-ask-input:focus {
+  border-color: #7C3AED;
+  background: #fff;
+}
+
+.wp-ask-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wp-ask-send {
+  background: #7C3AED;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.wp-ask-send:hover {
+  background: #6D28D9;
+}
+
+.wp-ask-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode adaptation */
+@media (prefers-color-scheme: dark) {
+  .wp-popup {
+    background: #2d2d3f;
+    color: #e8e8f0;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .wp-popup-word {
+    color: #f0f0ff;
+  }
+
+  .wp-popup-translation {
+    color: #c8c8d8;
+  }
+
+  .wp-popup-phonetic {
+    color: #888;
+  }
+
+  .wp-highlight:hover {
+    background-color: rgba(124, 58, 237, 0.15);
+  }
+
+  .wp-tooltip {
+    background: #f0f0ff;
+    color: #1a1a2e;
+  }
+
+  .wp-tooltip::after {
+    border-top-color: #f0f0ff;
+  }
+
+  .wp-note-input {
+    background: #3d3d5c;
+    border-color: #555;
+    color: #e8e8f0;
+  }
+
+  .wp-note-input:focus {
+    border-color: #7C3AED;
+    background: #2d2d3f;
+  }
+
+  .wp-note-confirm:hover {
+    background: rgba(16, 185, 129, 0.2);
+  }
+
+  .wp-note-cancel:hover {
+    background: rgba(229, 62, 62, 0.2);
+  }
+
+  .wp-note-delete {
+    color: #777;
+  }
+
+  .wp-note-delete:hover {
+    color: #f87171;
+    background: rgba(229, 62, 62, 0.2);
+  }
+
+  .wp-popup-note-display {
+    background: rgba(124, 58, 237, 0.12);
+  }
+
+  .wp-ask-section {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .wp-ask-toggle:hover {
+    background: rgba(124, 58, 237, 0.12);
+  }
+
+  .wp-ask-answer {
+    background: rgba(124, 58, 237, 0.1);
+    color: #d8d8e8;
+    border-color: rgba(124, 58, 237, 0.2);
+  }
+
+  .wp-ask-answer.wp-ask-error {
+    color: #f87171;
+    background: rgba(229, 62, 62, 0.1);
+    border-color: rgba(229, 62, 62, 0.2);
+  }
+
+  .wp-ask-input {
+    background: #3d3d5c;
+    border-color: #555;
+    color: #e8e8f0;
+  }
+
+  .wp-ask-input:focus {
+    border-color: #7C3AED;
+    background: #2d2d3f;
+  }
+
+  .wp-ask-input:disabled {
+    opacity: 0.4;
+  }
+}

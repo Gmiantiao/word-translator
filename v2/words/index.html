@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全部收藏 - 拾词</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="words-container">
+    <!-- Header -->
+    <div class="words-header">
+      <h1>📖 全部收藏</h1>
+      <div class="header-actions">
+        <span class="header-count" id="totalCount">0 条</span>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="words-toolbar">
+      <div class="toolbar-left">
+        <label class="select-all-label">
+          <input type="checkbox" id="selectAll">
+          <span>全选</span>
+        </label>
+        <span class="select-count" id="selectCount">已选 0 项</span>
+      </div>
+      <div class="toolbar-right">
+        <input type="text" id="searchInput" placeholder="搜索词汇或翻译...">
+        <button class="btn btn-flashcard" id="flashcardBtn">
+          <span>⚡</span> 闪词学习
+        </button>
+        <button class="btn btn-import" id="importBtn">
+          <span>📥</span> 导入
+        </button>
+        <button class="btn btn-primary" id="downloadBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          导出
+        </button>
+        <button class="btn btn-danger" id="clearAll">清空全部</button>
+      </div>
+    </div>
+
+    <!-- Download hint -->
+    <div class="download-hint" id="downloadHint" style="display:none;"></div>
+
+    <!-- Word List -->
+    <div class="words-list" id="wordList">
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📝</span>
+        <p>还没有收藏词汇</p>
+        <p class="empty-hint">在网页中划选英文或中文即可翻译收藏</p>
+      </div>
+    </div>
+    <!-- Flashcard Modal -->
+    <div class="modal-overlay" id="flashcardModal" style="display:none;">
+      <div class="flashcard-container">
+        <div class="flashcard-header">
+          <button class="flashcard-close" id="flashcardClose">✕</button>
+          <div class="flashcard-progress">
+            <span class="flashcard-counter" id="flashcardCounter">1 / 10</span>
+            <div class="flashcard-bar">
+              <div class="flashcard-bar-fill" id="flashcardBarFill"></div>
+            </div>
+          </div>
+          <div class="flashcard-stats">
+            <span class="stat-known">✅ <span id="knownCount">0</span></span>
+            <span class="stat-unknown">❌ <span id="unknownCount">0</span></span>
+          </div>
+        </div>
+        <div class="flashcard-deck" id="flashcardDeck">
+          <div class="flashcard-card-inner" id="flashcardCard">
+            <div class="flashcard-front">
+              <span class="flashcard-word" id="flashcardWord"></span>
+              <p class="flashcard-hint">点击卡片查看释义</p>
+            </div>
+            <div class="flashcard-back">
+              <span class="flashcard-translation" id="flashcardTranslation"></span>
+              <span class="flashcard-note" id="flashcardNote"></span>
+            </div>
+          </div>
+        </div>
+        <div class="flashcard-actions">
+          <button class="flashcard-action unknown" id="flashcardUnknown">❌ 不认识</button>
+          <button class="flashcard-action flip" id="flashcardFlip">🔄 翻转</button>
+          <button class="flashcard-action known" id="flashcardKnown">✅ 认识</button>
+        </div>
+        <div class="flashcard-complete" id="flashcardComplete" style="display:none;">
+          <div class="complete-icon">🎉</div>
+          <h2>学习完成！</h2>
+          <p>本轮共复习 <strong id="completeTotal">0</strong> 个词汇</p>
+          <p>认识 <strong id="completeKnown">0</strong> 个，不认识 <strong id="completeUnknown">0</strong> 个</p>
+          <button class="btn btn-primary" id="flashcardRestart">再来一轮</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal" style="display:none;">
+      <div class="import-container">
+        <div class="import-header">
+          <h2>📥 导入词汇</h2>
+          <button class="import-close" id="importClose">✕</button>
+        </div>
+        <div class="import-body">
+          <p class="import-desc">支持以下格式，每行一个词条：</p>
+          <ul class="import-formats">
+            <li><code>单词</code> — 仅单词（翻译留空）</li>
+            <li><code>单词 - 翻译</code> — 用 <code>-</code> 分隔</li>
+            <li><code>单词\t翻译</code> — 用 Tab 分隔</li>
+            <li><code>单词 | 翻译 | 音标</code> — 用 <code>|</code> 分隔</li>
+            <li><code>[{"word":"...","translation":"..."}]</code> — JSON 格式</li>
+          </ul>
+          <textarea id="importTextarea" placeholder="粘贴单词或句子到这里...&#10;&#10;例如：&#10;serendipity - 意外发现的美好&#10;ephemeral - 短暂的&#10;resilience | 韧性 | /rɪˈzɪliəns/"></textarea>
+          <button class="btn btn-primary" id="importPreviewBtn">预览解析结果</button>
+        </div>
+        <div class="import-preview" id="importPreview" style="display:none;">
+          <div class="import-preview-header">
+            <h3>预览 (<span id="importPreviewCount">0</span> 条)</h3>
+            <span class="import-preview-hint">确认无误后点击导入，重复词汇会自动跳过</span>
+          </div>
+          <div class="import-preview-list" id="importPreviewList"></div>
+          <div class="import-preview-actions">
+            <button class="btn btn-import" id="importConfirmBtn">确认导入</button>
+            <button class="btn btn-cancel" id="importCancelBtn">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>

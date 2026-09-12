@@ -1,0 +1,244 @@
+/* 划词翻译 - Options Page Styles */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: #1a1a2e;
+  background: #f9fafb;
+  line-height: 1.6;
+}
+
+.options-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Header */
+.options-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.options-logo { font-size: 28px; }
+.options-header h1 { font-size: 22px; font-weight: 600; color: #1a1a2e; }
+
+/* Connected Banner */
+.connected-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.banner-icon { font-size: 24px; }
+.banner-text { flex: 1; }
+.banner-title { font-weight: 600; color: #166534; }
+.banner-desc { font-size: 12px; color: #4ade80; color: #6b7280; margin-top: 2px; }
+
+/* Sync Section */
+.sync-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.sync-section h2 { font-size: 16px; margin-bottom: 8px; }
+.sync-section p { color: #6b7280; font-size: 13px; margin-bottom: 12px; }
+.sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sync-result { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; line-height: 1.6; }
+.sync-result.success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+.sync-result.warning { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+.sync-result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* Steps */
+.step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.step-number {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  background: #7C3AED;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 2px;
+}
+.step-content { flex: 1; }
+.step-content h2 { font-size: 16px; margin-bottom: 8px; }
+.step-content p { color: #4b5563; margin-bottom: 8px; }
+.step-hint {
+  background: #faf5ff;
+  border-left: 3px solid #7C3AED;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #6b21a8;
+  border-radius: 0 6px 6px 0;
+  margin-top: 8px;
+}
+.step-hint code { background: #ede9fe; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+.step-list { padding-left: 20px; margin: 8px 0; }
+.step-list li { margin-bottom: 4px; color: #4b5563; }
+
+/* Buttons */
+.btn-primary {
+  background: #7C3AED;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #6D28D9; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-outline {
+  display: inline-block;
+  border: 1px solid #7C3AED;
+  color: #7C3AED;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.btn-outline:hover { background: #7C3AED; color: white; }
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-danger:hover { background: #dc2626; }
+
+/* Config Form */
+.config-form { margin-top: 12px; }
+.form-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #374151;
+}
+.form-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+.form-hint { font-size: 12px; color: #9ca3af; margin-top: 6px; line-height: 1.6; }
+.form-hint code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+.btn-toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 34px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.5;
+}
+.btn-toggle-visibility:hover { opacity: 1; }
+
+/* Validate Result */
+.validate-result {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.validate-result.success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+.validate-result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* Reference */
+.reference {
+  margin-top: 32px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+.reference h3 { font-size: 15px; margin-bottom: 10px; }
+.reference p { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+.reference table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.reference th, .reference td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+.reference th { background: #f9fafb; font-weight: 500; color: #374151; }
+.reference td { color: #4b5563; }
+
+/* Flashcard Section */
+.flashcard-section {
+  margin-bottom: 24px;
+}
+.flashcard-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.flashcard-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+.flashcard-info { flex: 1; }
+.flashcard-info h2 { font-size: 16px; margin-bottom: 4px; color: #1a1a2e; }
+.flashcard-info p { font-size: 13px; color: #6b7280; }
+.btn-flashcard {
+  background: linear-gradient(135deg, #7C3AED, #a855f7);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.btn-flashcard:hover { opacity: 0.9; transform: scale(1.02); }

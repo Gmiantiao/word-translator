@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>划词翻译 - Notion 配置</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="options-container">
+    <div class="options-header">
+      <span class="options-logo">📖</span>
+      <h1>划词翻译 · Notion 配置</h1>
+    </div>
+
+    <!-- Connected State -->
+    <div class="connected-banner" id="connectedBanner" style="display:none;">
+      <span class="banner-icon">✅</span>
+      <div class="banner-text">
+        <p class="banner-title">Notion 已连接</p>
+        <p class="banner-desc" id="connectedDesc"></p>
+      </div>
+      <button class="btn-danger" id="disconnectBtn">断开</button>
+    </div>
+
+    <!-- Sync Section (only when connected) -->
+    <div class="sync-section" id="syncSection" style="display:none;">
+      <h2>☁️ 同步到 Notion</h2>
+      <p>将本地收藏的词汇批量同步到 Notion 数据库。新收藏的词汇会自动同步，此按钮用于补同步历史词汇。</p>
+      <div class="sync-row">
+        <span id="localCount">本地词汇：0 条</span>
+        <button class="btn-primary" id="syncAllBtn">一键同步全部</button>
+      </div>
+      <div class="sync-result" id="syncResult" style="display:none;"></div>
+    </div>
+
+    <!-- Setup Steps -->
+    <div id="setupSteps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h2>创建 Notion Integration</h2>
+          <p>前往 Notion 的 Integration 管理页面，创建一个新的 Integration：</p>
+          <a href="https://www.notion.so/my-integrations" target="_blank" class="btn-outline">
+            打开 Notion Integrations →
+          </a>
+          <p class="step-hint">点击「New integration」，名字随便填（如"划词翻译"），选择你的工作区，然后复制生成的 API Key。</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h2>创建数据库并连接</h2>
+          <p>在 Notion 中创建一个新的数据库（或使用已有数据库），然后将其连接到 Integration：</p>
+          <ol class="step-list">
+            <li>打开数据库页面</li>
+            <li>点击右上角 <strong>···</strong> → <strong>Connections</strong> → <strong>Connect to</strong></li>
+            <li>搜索并选择你刚创建的 Integration</li>
+          </ol>
+          <p class="step-hint">数据库属性无需手动创建，插件连接成功后会自动补齐所需的列（单词、中文释义、音标等）。</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h2>填写配置</h2>
+          <div class="config-form">
+            <div class="form-group">
+              <label for="apiKey">API Key</label>
+              <input type="password" id="apiKey" placeholder="ntn_xxxxxxxxxxxxxxxx 或 secret_xxxxxxxxxxxxxxxx" autocomplete="off">
+              <button class="btn-toggle-visibility" id="toggleApiKey" title="显示/隐藏">👁</button>
+            </div>
+            <div class="form-group">
+              <label for="databaseId">数据库 ID</label>
+              <input type="text" id="databaseId" placeholder="粘贴数据库 ID 或完整 URL">
+              <p class="form-hint">打开数据库页面，URL 格式：<br><code>https://notion.so/xxx/<strong>DATABASE_ID</strong>?v=...</code><br>也支持直接粘贴完整 URL，插件会自动提取 ID</p>
+            </div>
+            <button class="btn-primary" id="validateBtn">
+              <span id="validateBtnText">验证并连接</span>
+              <span id="validateBtnLoading" style="display:none;">验证中...</span>
+            </button>
+            <div class="validate-result" id="validateResult" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flashcard Learning -->
+    <div class="flashcard-section">
+      <div class="flashcard-card">
+        <div class="flashcard-icon">⚡</div>
+        <div class="flashcard-info">
+          <h2>闪词学习</h2>
+          <p>用卡片翻转的方式复习已收藏的词汇，快速加深记忆</p>
+        </div>
+        <button class="btn-flashcard" id="openFlashcardBtn">开始学习 →</button>
+      </div>
+    </div>
+
+    <!-- Database Properties Reference -->
+    <div class="reference">
+      <h3>📋 数据库属性参考</h3>
+      <p>插件连接后会自动创建以下属性（如不存在）：</p>
+      <table>
+        <thead>
+          <tr><th>属性名</th><th>类型</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>标题列</td><td>Title</td><td>收藏的英文单词/短语</td></tr>
+          <tr><td>单词</td><td>Rich Text</td><td>英文单词</td></tr>
+          <tr><td>中文释义</td><td>Rich Text</td><td>翻译结果</td></tr>
+          <tr><td>音标</td><td>Rich Text</td><td>单词音标</td></tr>
+          <tr><td>来源</td><td>URL</td><td>收藏来源网页</td></tr>
+          <tr><td>收藏时间</td><td>Date</td><td>收藏时间</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

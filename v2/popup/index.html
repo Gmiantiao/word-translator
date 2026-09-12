@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拾词</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="popup-title">
+        <span class="popup-logo">📖</span>
+        <span>拾词</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleEnabled" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <!-- Stats -->
+    <div class="popup-stats">
+      <div class="stat-item">
+        <span class="stat-value" id="totalCount">0</span>
+        <span class="stat-label">已收藏</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="weekCount">0</span>
+        <span class="stat-label">本周新增</span>
+      </div>
+    </div>
+
+    <!-- Select Bar -->
+    <div class="popup-select-bar" id="selectBar" style="display:none;">
+      <label class="select-all-label">
+        <input type="checkbox" id="selectAll">
+        <span>全选</span>
+      </label>
+      <span class="select-count" id="selectCount">已选 0 项</span>
+    </div>
+
+    <!-- Download Bar -->
+    <div class="popup-download-bar">
+      <button class="btn-download" id="downloadBtn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span id="downloadLabel">下载全部</span>
+      </button>
+      <span class="download-hint" id="downloadHint" style="display:none;"></span>
+    </div>
+
+    <!-- Search -->
+    <div class="popup-search">
+      <input type="text" id="searchInput" placeholder="搜索收藏词汇..." />
+    </div>
+
+    <!-- Word List -->
+    <div class="popup-wordlist" id="wordList">
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📝</span>
+        <p>还没有收藏词汇</p>
+        <p class="empty-hint">在网页中划选英文单词即可翻译收藏</p>
+      </div>
+    </div>
+
+    <!-- View All Link -->
+    <div class="view-all-bar" id="viewAllBar" style="display:none;">
+      <button class="btn-view-all" id="viewAllBtn">查看全部 (<span id="viewAllCount">0</span>)</button>
+      <button class="btn-view-all btn-flashcard-link" id="viewFlashcardBtn">⚡ 闪词</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="popup-settings">
+      <button class="settings-toggle" id="settingsToggle">
+        ⚙️ 设置
+        <span class="settings-arrow">›</span>
+      </button>
+      <div class="settings-panel" id="settingsPanel" style="display:none;">
+        <div class="setting-row">
+          <label>翻译目标语言</label>
+          <select id="targetLang">
+            <option value="zh-CN">中文简体</option>
+            <option value="zh-TW">中文繁體</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>高亮颜色</label>
+          <input type="color" id="highlightColor" value="#7C3AED">
+        </div>
+        <div class="setting-row">
+          <label>翻译引擎</label>
+          <select id="translateEngine">
+            <option value="google" selected>Google 翻译</option>
+            <option value="mymemory">MyMemory (免费)</option>
+            <option value="deepseek">DeepSeek</option>
+          </select>
+        </div>
+        <div class="setting-row" id="deepseekKeyRow" style="display:none;flex-direction:column;align-items:stretch;gap:4px;">
+          <label>DeepSeek API Key</label>
+          <div style="display:flex;gap:6px;">
+            <input type="password" class="notion-input" id="deepseekApiKey" placeholder="sk-..." style="flex:1;">
+            <button class="btn-test" id="testDeepseekBtn" title="测试连接">测试</button>
+          </div>
+          <div class="notion-hint" id="deepseekHint" style="display:none;"></div>
+        </div>
+        <div class="setting-row">
+          <label>中译英</label>
+          <label class="toggle-switch small">
+            <input type="checkbox" id="enableZhToEn">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row" id="enableAskRow">
+          <label>💬 AI 提问</label>
+          <label class="toggle-switch small">
+            <input type="checkbox" id="enableAsk" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-divider"></div>
+        <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label>🔗 Notion 同步</label>
+            <span class="notion-status" id="notionStatus">未连接</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-download" id="openNotionSettings" style="flex:1;font-size:11px;padding:6px;">配置 Notion</button>
+            <button class="btn-download" id="syncBtn" style="font-size:11px;padding:6px;display:none;">一键同步</button>
+          </div>
+          <div class="notion-hint" id="notionHint" style="display:none;"></div>
+        </div>
+        <div class="setting-actions">
+          <button class="btn-danger" id="clearAll">清空全部收藏</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>
