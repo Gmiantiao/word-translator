@@ -24,6 +24,17 @@
     functional: '场景功能句'
   };
 
+  // This script runs on every page and only ever tests these for truthiness, so it
+  // never needs the real values. Both the message path and chrome.storage.onChanged
+  // would otherwise leave live API keys in every page's JS context.
+  function withoutKeys(s) {
+    return {
+      ...s,
+      typesafeApiKey: s.typesafeApiKey ? '····' : '',
+      deepseekApiKey: s.deepseekApiKey ? '····' : ''
+    };
+  }
+
   let currentPopup = null;
   let settings = { ...DEFAULT_SETTINGS };
   let conversationHistory = []; // For AI multi-turn conversation
@@ -32,7 +43,7 @@
 
   // --- Init ---
   async function init() {
-    settings = await getSettings();
+    settings = withoutKeys(await getSettings());
     if (settings.enabled) {
       highlightCollectedWords();
     }
@@ -44,7 +55,7 @@
 
   function onMessage(request, sender, sendResponse) {
     if (request.type === 'settingsChanged') {
-      settings = request.settings;
+      settings = withoutKeys(request.settings);
       if (settings.enabled) {
         highlightCollectedWords();
       } else {
@@ -61,7 +72,8 @@
     if (area === 'local' && changes.settings) {
       const newSettings = changes.settings.newValue;
       if (newSettings) {
-        settings = { ...DEFAULT_SETTINGS, ...newSettings };
+        // Raw storage value -- strip the keys before it lands in page context.
+        settings = withoutKeys({ ...DEFAULT_SETTINGS, ...newSettings });
         if (settings.enabled) {
           highlightCollectedWords();
         } else {

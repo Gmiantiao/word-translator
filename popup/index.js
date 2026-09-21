@@ -20,12 +20,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectCount = document.getElementById('selectCount');
   const translateEngine = document.getElementById('translateEngine');
   const deepseekApiKey = document.getElementById('deepseekApiKey');
+  const clearDeepseekBtn = document.getElementById('clearDeepseekBtn');
   const deepseekKeyRow = document.getElementById('deepseekKeyRow');
   const enableZhToEn = document.getElementById('enableZhToEn');
   const enableAsk = document.getElementById('enableAsk');
   const enableAnalyze = document.getElementById('enableAnalyze');
   const typesafeApiKey = document.getElementById('typesafeApiKey');
   const testTypesafeBtn = document.getElementById('testTypesafeBtn');
+  const clearTypesafeBtn = document.getElementById('clearTypesafeBtn');
   const typesafeHint = document.getElementById('typesafeHint');
 
   const viewAllBar = document.getElementById('viewAllBar');
@@ -49,11 +51,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           targetLang.value = s.targetLang || 'zh-CN';
           highlightColor.value = s.highlightColor || '#7C3AED';
           translateEngine.value = s.translateEngine || 'google';
-          deepseekApiKey.value = s.deepseekApiKey || '';
+          // Masked from the worker, same as the TypeSafe key -- never rendered here.
+          deepseekApiKey.value = '';
+          deepseekApiKey.placeholder = s.deepseekApiKey || 'sk-...';
           enableZhToEn.checked = s.enableZhToEn || false;
           enableAsk.checked = s.enableAsk !== false;
           enableAnalyze.checked = s.enableAnalyze !== false;
-          typesafeApiKey.value = s.typesafeApiKey || '';
+          // s.typesafeApiKey arrives masked from the worker. Never put a key in the
+          // DOM: the field stays empty and shows the hint until a new one is typed.
+          typesafeApiKey.value = '';
+          typesafeApiKey.placeholder = s.typesafeApiKey || 'apikey_...';
           deepseekKeyRow.style.display = (translateEngine.value === 'deepseek') ? 'flex' : 'none';
         }
         resolve();
@@ -458,8 +465,27 @@ rows + '\n' +
     deepseekKeyRow.style.display = (translateEngine.value === 'deepseek') ? 'flex' : 'none';
   });
 
-  deepseekApiKey.addEventListener('input', function() {
-    saveSettings({ deepseekApiKey: deepseekApiKey.value });
+  // Save on blur, not per keystroke: the field starts empty, so saving as you type
+  // would overwrite a good key with a half-typed one.
+  deepseekApiKey.addEventListener('change', async function() {
+    const value = deepseekApiKey.value.trim();
+    if (!value) return; // empty means "keep whatever is already stored"
+    if (/^[A-Za-z_]+=/.test(value)) {
+      showDeepseekHint('只填 key 本身，不要带上 KEY= 前缀', 'error');
+      deepseekApiKey.value = '';
+      return;
+    }
+    await saveSettings({ deepseekApiKey: value });
+    deepseekApiKey.value = '';
+    deepseekApiKey.placeholder = '····' + value.slice(-4);
+    showDeepseekHint('已保存', 'success');
+  });
+
+  clearDeepseekBtn.addEventListener('click', async function() {
+    await saveSettings({ deepseekApiKey: '' });
+    deepseekApiKey.value = '';
+    deepseekApiKey.placeholder = 'sk-...';
+    showDeepseekHint('已清除', 'success');
   });
 
   enableZhToEn.addEventListener('change', function() {
@@ -474,9 +500,29 @@ rows + '\n' +
     saveSettings({ enableAnalyze: enableAnalyze.checked });
   });
 
-  // Trimmed: a trailing space would silently break the Bearer header.
-  typesafeApiKey.addEventListener('input', function() {
-    saveSettings({ typesafeApiKey: typesafeApiKey.value.trim() });
+  // Save on blur, not per keystroke: the field starts empty, so saving as you type
+  // would overwrite a good key with a half-typed one.
+  typesafeApiKey.addEventListener('change', async function() {
+    const value = typesafeApiKey.value.trim();
+    if (!value) return; // empty means "keep whatever is already stored"
+    // Same guard as the test button. Saving the whole .env line would otherwise only
+    // surface much later, as a 401 from the analysis panel.
+    if (/^[A-Za-z_]+=/.test(value)) {
+      showTypesafeHint('只填 key 本身，不要带上 KEY= 前缀', 'error');
+      typesafeApiKey.value = '';
+      return;
+    }
+    await saveSettings({ typesafeApiKey: value });
+    typesafeApiKey.value = '';
+    typesafeApiKey.placeholder = '····' + value.slice(-4);
+    showTypesafeHint('已保存', 'success');
+  });
+
+  clearTypesafeBtn.addEventListener('click', async function() {
+    await saveSettings({ typesafeApiKey: '' });
+    typesafeApiKey.value = '';
+    typesafeApiKey.placeholder = 'apikey_...';
+    showTypesafeHint('已清除', 'success');
   });
 
   // --- Clear All ---
@@ -586,44 +632,26 @@ rows + '\n' +
 
   // --- DeepSeek Test ---
   testDeepseekBtn.addEventListener('click', async () => {
-    const key = deepseekApiKey.value.trim();
-    if (!key) {
-      showDeepseekHint('请输入 API Key', 'error');
-      return;
-    }
+    const typed = deepseekApiKey.value.trim();
 
     testDeepseekBtn.disabled = true;
     testDeepseekBtn.textContent = '测试中...';
     deepseekHint.style.display = 'none';
 
     try {
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + key,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'deepseek-v4-pro',
-          messages: [
-            { role: 'system', content: 'Reply with only the word "OK".' },
-            { role: 'user', content: 'Test' }
-          ],
-          max_tokens: 10
-        })
+      // Routed through the worker, which applies a 15s timeout. This used to fetch
+      // straight from here with no timeout, so a hung request left the button stuck
+      // on "测试中..." forever. An empty field tests the stored key.
+      const res = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'testDeepseekKey', apiKey: typed || undefined }, (r) => {
+          resolve(r || { success: false, error: '无响应' });
+        });
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.choices) {
-          showDeepseekHint('连接成功', 'success');
-        } else {
-          showDeepseekHint('响应异常，请检查 API Key', 'error');
-        }
+      if (res && res.success) {
+        showDeepseekHint('连接成功', 'success');
       } else {
-        const errData = await response.json().catch(() => ({}));
-        const errMsg = (errData.error && errData.error.message) || 'HTTP ' + response.status;
-        showDeepseekHint('连接失败: ' + errMsg, 'error');
+        showDeepseekHint('连接失败: ' + ((res && res.error) || '未知错误'), 'error');
       }
     } catch (err) {
       showDeepseekHint('网络错误: ' + err.message, 'error');
@@ -642,14 +670,11 @@ rows + '\n' +
 
   // --- TypeSafe Test ---
   testTypesafeBtn.addEventListener('click', async () => {
-    const key = typesafeApiKey.value.trim();
-    if (!key) {
-      showTypesafeHint('请输入 API Key', 'error');
-      return;
-    }
+    const typed = typesafeApiKey.value.trim();
+
     // Pasting the whole .env line is the usual mistake, and the API answers it with
     // a generic 401 that gives no hint. Catch it here instead.
-    if (/^[A-Za-z_]+=/.test(key)) {
+    if (typed && /^[A-Za-z_]+=/.test(typed)) {
       showTypesafeHint('只填 key 本身，不要带上 KEY= 前缀', 'error');
       return;
     }
@@ -660,10 +685,11 @@ rows + '\n' +
 
     try {
       // Goes through the service worker rather than fetching here, so the request
-      // gets the same AbortController timeout every other provider call has. The
-      // DeepSeek test below fetches directly and has no timeout at all.
+      // gets the same AbortController timeout every other provider call has. An empty
+      // field means "test what's saved" -- the worker falls back to the stored key,
+      // so the real value never round-trips through this page.
       const res = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: 'testTypesafeKey', apiKey: key }, (r) => {
+        chrome.runtime.sendMessage({ type: 'testTypesafeKey', apiKey: typed || undefined }, (r) => {
           resolve(r || { success: false, error: '无响应' });
         });
       });

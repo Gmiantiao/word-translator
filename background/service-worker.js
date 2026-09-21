@@ -223,6 +223,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  // DeepSeek key check: fast path. Used to be a direct fetch from the popup with no
+  // timeout at all -- a hung request left the button stuck on "测试中..." forever.
+  if (request.type === 'testDeepseekKey') {
+    testDeepseekKey(request.apiKey)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(err => { console.error('[划词翻译] DeepSeek test error:', err); sendResponse({ success: false, error: err.message }); });
+    return true;
+  }
+
   handleMessage(request).then(sendResponse).catch(err => sendResponse({ success: false, error: err.message }));
   return true;
 });
@@ -264,11 +273,28 @@ async function handleMessage(request) {
 
   if (type === 'getSettings') {
     const settings = await getSettings();
-    return { success: true, data: settings };
+    // Callers only need to know *whether* a key is configured, so never send the real
+    // one back -- that would put it in the popup's DOM for no reason. Masked rather
+    // than blanked because the content script tests it for truthiness.
+    return {
+      success: true,
+      data: {
+        ...settings,
+        typesafeApiKey: maskKey(settings.typesafeApiKey),
+        deepseekApiKey: maskKey(settings.deepseekApiKey)
+      }
+    };
   }
 
   if (type === 'saveSettings') {
-    await saveSettings(request.settings);
+    const partial = { ...request.settings };
+    // Belt and braces: a masked value must never overwrite a real key.
+    for (const field of ['typesafeApiKey', 'deepseekApiKey']) {
+      if (partial[field] && partial[field].startsWith(MASK_PREFIX)) {
+        delete partial[field];
+      }
+    }
+    await saveSettings(partial);
     return { success: true };
   }
 
@@ -539,6 +565,13 @@ async function askAI(selectedText, question, conversationHistory) {
 
 // --- English analysis (TypeSafe / Jev) ---
 
+// Show enough of a stored key to recognise it, never enough to use it. Same idea as
+// the masked value getNotionStatus returns.
+const MASK_PREFIX = '····';
+function maskKey(key) {
+  return key ? MASK_PREFIX + key.slice(-4) : '';
+}
+
 // Mirrors jev-study/study.py:build_questions(). Keep the two in sync when tuning.
 const JEV_MODEL = 'jev-latest';
 const JEV_QUESTIONS = {
@@ -637,7 +670,14 @@ async function analyzeEnglish(text) {
 
 // Verify a key without spending a Jev call -- /v1/models is cheap.
 async function testTypesafeKey(apiKey) {
-  if (!apiKey) {
+  // No key passed means "test the stored one" -- lets the popup verify a saved key
+  // without the real value ever leaving the worker.
+  let key = (apiKey || '').trim();
+  if (!key) {
+    const settings = await getSettings();
+    key = settings.typesafeApiKey || '';
+  }
+  if (!key) {
     throw new Error('请先填入 API Key');
   }
 
@@ -646,7 +686,7 @@ async function testTypesafeKey(apiKey) {
 
   try {
     const response = await fetch('https://api.typesafe.ai/v1/models', {
-      headers: { 'Authorization': 'Bearer ' + apiKey },
+      headers: { 'Authorization': 'Bearer ' + key },
       signal: controller.signal
     });
 
@@ -667,6 +707,57 @@ async function testTypesafeKey(apiKey) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') {
       throw new Error('TypeSafe 请求超时，请检查网络');
+    }
+    throw err;
+  }
+}
+
+// Probe DeepSeek with a 1-token request. Lives here rather than in the popup so it
+// gets a timeout like every other provider call.
+async function testDeepseekKey(apiKey) {
+  let key = (apiKey || '').trim();
+  if (!key) {
+    const settings = await getSettings();
+    key = settings.deepseekApiKey || '';
+  }
+  if (!key) {
+    throw new Error('请先填入 API Key');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'deepseek-v4-pro',
+        messages: [
+          { role: 'system', content: 'Reply with only the word "OK".' },
+          { role: 'user', content: 'Test' }
+        ],
+        max_tokens: 10
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const detail = (errData.error && errData.error.message) || ('HTTP ' + response.status);
+      throw new Error('API Key 无效: ' + detail);
+    }
+
+    return { ok: true };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('DeepSeek 请求超时，请检查网络');
     }
     throw err;
   }

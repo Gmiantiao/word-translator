@@ -101,6 +101,10 @@ HuaciFanyi/
 │   ├── index.js            # 词汇管理逻辑
 │   └── index.css           # 词汇页样式
 ├── icons/                  # 扩展图标
+├── test/                   # 回归测试（node 直接跑，无需浏览器、无需构建）
+│   ├── sw-test.js          # 后台服务 —— 会真实调用 TypeSafe
+│   ├── content-test.js     # 内容脚本：选区门槛、面板渲染
+│   └── popup-test.js       # 弹出面板：密钥掩码、id 与 HTML 交叉核对
 └── promo/                  # 宣传页素材
 ```
 
@@ -113,6 +117,20 @@ HuaciFanyi/
 | AI 提问 | ✅ | 与 DeepSeek 共用 Key |
 | 音标查询 | ❌ | 免费词典 API |
 | Notion 同步 | ✅ | 需 [Notion Integration](https://www.notion.so/my-integrations) |
+
+## 🧪 测试
+
+```bash
+node test/content-test.js    # 内容脚本：选区门槛、面板渲染（不联网）
+node test/popup-test.js      # 弹出面板：密钥掩码、id 与 HTML 交叉核对（不联网）
+TYPESAFE_ENV_FILE=../jev/.env node test/sw-test.js   # 后台服务（会真实调用 API）
+```
+
+三个脚本把**真实的扩展源码**加载进 Node,用桩替换 `chrome.*` 和 DOM —— 不需要浏览器,
+也不需要引入任何依赖或构建步骤。
+
+`sw-test.js` 会真实请求 TypeSafe(输入计费,单次约百万分之几美元)。缺 key 时它会打印用法
+并以退出码 2 退出,所以也可以安全地放进 CI 之外的本地流程。
 
 ## 📄 License
 
