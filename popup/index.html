@@ -125,6 +125,21 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div class="setting-row" id="enableAnalyzeRow">
+          <label>📊 英语判定</label>
+          <label class="toggle-switch small">
+            <input type="checkbox" id="enableAnalyze" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row" id="typesafeKeyRow" style="flex-direction:column;align-items:stretch;gap:4px;">
+          <label>TypeSafe API Key</label>
+          <div style="display:flex;gap:6px;">
+            <input type="password" class="notion-input" id="typesafeApiKey" placeholder="apikey_..." style="flex:1;">
+            <button class="btn-test" id="testTypesafeBtn" title="测试连接">测试</button>
+          </div>
+          <div class="notion-hint" id="typesafeHint" style="display:none;"></div>
+        </div>
         <div class="setting-divider"></div>
         <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:4px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">

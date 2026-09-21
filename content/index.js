@@ -7,7 +7,23 @@
   if (window.__wordPickerInjected) return;
   window.__wordPickerInjected = true;
 
-  const DEFAULT_SETTINGS = { enabled: true, targetLang: 'zh-CN', highlightColor: '#7C3AED', enableZhToEn: false, enableAsk: true };
+  // Kept in sync by hand with the authoritative copy in background/service-worker.js.
+  const DEFAULT_SETTINGS = { enabled: true, targetLang: 'zh-CN', highlightColor: '#7C3AED', enableZhToEn: false, enableAsk: true, enableAnalyze: true, typesafeApiKey: '' };
+
+  // Translation engines degrade badly past a few hundred chars; the English analysis
+  // handles far more, so the two limits differ.
+  const MAX_TRANSLATE_CHARS = 500;
+  const MAX_ANALYZE_CHARS = 3000;
+  const CONFIDENCE_FLOOR = 0.70; // mirrors jev/jev.py:42
+  const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const FEATURE_LABELS = {
+    idiom_phrasal: '习语 / 短语动词',
+    collocation: '地道搭配',
+    grammar_pattern: '句型结构',
+    slang: '俚语 / 口语缩略',
+    functional: '场景功能句'
+  };
+
   let currentPopup = null;
   let settings = { ...DEFAULT_SETTINGS };
   let conversationHistory = []; // For AI multi-turn conversation
@@ -89,7 +105,7 @@
     }
 
     if (!selectedText || selectedText.length === 0) return;
-    if (selectedText.length > 500) return;
+    if (selectedText.length > MAX_ANALYZE_CHARS) return;
     if (isMostlyJapanese(selectedText)) {
       requestTranslation(selectedText, selection, 'ja');
       return;
@@ -191,6 +207,13 @@
     // Capture request ID to prevent stale callbacks from recreating popup
     const requestId = ++translationRequestId;
 
+    // Long selections skip translation -- but the panel still opens, otherwise the
+    // English analysis below would be unreachable for exactly the passages it suits.
+    if (text.length > MAX_TRANSLATE_CHARS) {
+      showPopup(text, `（${text.length} 字符，已跳过翻译）`, rect, false);
+      return;
+    }
+
     // Show loading popup
     showPopup(text, null, rect, true);
 
@@ -224,6 +247,12 @@
     removePopup();
 
     const showAsk = settings.enableAsk && settings.deepseekApiKey && !loading;
+    // English only -- judging the CEFR level of a Chinese passage is meaningless.
+    const showAnalyze = settings.enableAnalyze && settings.typesafeApiKey
+      && !loading && isMostlyEnglish(originalText);
+    // The collection is a word list; keep 3000-char passages out of it even though
+    // the raised selection gate now lets them reach this popup.
+    const showFooter = !loading && originalText.length <= MAX_TRANSLATE_CHARS;
 
     const popup = document.createElement('div');
     popup.className = 'wp-popup';
@@ -261,8 +290,21 @@
         </div>
       </div>
       ` : ''}
+      ${showAnalyze ? `
+      <div class="wp-analyze-section">
+        <div class="wp-analyze-toggle" id="wpAnalyzeToggle">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>英语判定</span>
+        </div>
+        <div class="wp-analyze-body" style="display:none;">
+          <div class="wp-analyze-result" id="wpAnalyzeResult" style="display:none;"></div>
+        </div>
+      </div>
+      ` : ''}
       <div class="wp-popup-footer">
-        ${!loading ? `<button class="wp-collect-btn ${isCollected ? 'wp-collected' : ''}" title="${isCollected ? '取消收藏' : '收藏'}">
+        ${showFooter ? `<button class="wp-collect-btn ${isCollected ? 'wp-collected' : ''}" title="${isCollected ? '取消收藏' : '收藏'}">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="${isCollected ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
@@ -407,6 +449,9 @@
 
     // --- Ask AI Section ---
     setupAskSection(popup, originalText);
+
+    // --- English Analysis Section ---
+    setupAnalyzeSection(popup, originalText);
   }
 
   function setupAskSection(popup, originalText) {
@@ -477,6 +522,96 @@
       if (e.key === 'Escape') {
         e.stopPropagation();
       }
+    });
+  }
+
+  // --- English Analysis Section (TypeSafe / Jev) ---
+
+  // Map Jev's fractional score onto a CEFR band, hinting when it leans to a neighbour.
+  // Same logic as jev-study/study.py:cefr_label().
+  function cefrLabel(score) {
+    const index = Math.min(Math.max(Math.round(score), 0), CEFR.length - 1);
+    const offset = score - index;
+    if (offset >= 0.25 && index + 1 < CEFR.length) return CEFR[index] + ' 偏 ' + CEFR[index + 1];
+    if (offset <= -0.25 && index - 1 >= 0) return CEFR[index] + ' 偏 ' + CEFR[index - 1];
+    return CEFR[index];
+  }
+
+  function analyzeRow(label, value, confidence) {
+    const warn = (typeof confidence === 'number' && confidence < CONFIDENCE_FLOOR)
+      ? ' <span class="wp-analyze-flag">⚠</span>'
+      : '';
+    return `<div class="wp-analyze-row">
+        <span class="wp-analyze-label">${label}</span>
+        <span class="wp-analyze-value">${escapeHtml(value)}${warn}</span>
+      </div>`;
+  }
+
+  function renderAnalysis(result) {
+    // The noul primitive returns only a probability, no confidence -- the number
+    // speaks for itself, so that row carries no flag.
+    const casual = result.casual >= 0.5 ? '是' : '否';
+    const feature = FEATURE_LABELS[result.feature] || result.feature;
+    return analyzeRow('日常口语?', casual + ' · ' + result.casual.toFixed(2)) +
+      analyzeRow('CEFR 难度', cefrLabel(result.score) + ' · ' + result.scoreConfidence.toFixed(2), result.scoreConfidence) +
+      analyzeRow('最值得学', feature + ' · ' + result.featureConfidence.toFixed(2), result.featureConfidence);
+  }
+
+  function setupAnalyzeSection(popup, originalText) {
+    const toggle = popup.querySelector('#wpAnalyzeToggle');
+    const body = popup.querySelector('.wp-analyze-body');
+    const result = popup.querySelector('#wpAnalyzeResult');
+
+    if (!toggle || !body) return;
+
+    let expanded = false;
+    let analyzed = false;
+
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      expanded = !expanded;
+      body.style.display = expanded ? 'block' : 'none';
+      toggle.classList.toggle('wp-analyze-expanded', expanded);
+
+      // Analyze once per popup -- re-expanding shouldn't spend another call.
+      if (expanded && !analyzed) {
+        analyzed = true;
+        runAnalysis(result, originalText);
+      }
+    });
+  }
+
+  async function runAnalysis(result, text) {
+    // Same stale-guard the translation path uses: drop the result if this popup
+    // was dismissed or replaced while the request was in flight.
+    const requestId = translationRequestId;
+
+    result.style.display = 'block';
+    result.className = 'wp-analyze-result';
+    result.innerHTML = '<span class="wp-loading"></span> 分析中...';
+
+    try {
+      const res = await sendAnalyzeRequest(text);
+      if (requestId !== translationRequestId) return;
+
+      if (res && res.success) {
+        result.innerHTML = renderAnalysis(res.data);
+      } else {
+        result.innerHTML = '❌ ' + escapeHtml((res && res.error) || '判定失败');
+        result.className = 'wp-analyze-result wp-analyze-error';
+      }
+    } catch (err) {
+      if (requestId !== translationRequestId) return;
+      result.innerHTML = '❌ ' + escapeHtml(err.message || '网络错误');
+      result.className = 'wp-analyze-result wp-analyze-error';
+    }
+  }
+
+  function sendAnalyzeRequest(text) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'analyzeEnglish', text: text }, (res) => {
+        resolve(res || { success: false, error: '无响应' });
+      });
     });
   }
 

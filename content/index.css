@@ -35,6 +35,11 @@
   font-weight: 600;
   font-size: 15px;
   color: #1a1a2e;
+  /* Selections can now run to 3000 chars; clamp the header instead of blowing it out */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .wp-popup-phonetic {
@@ -360,6 +365,82 @@
   cursor: not-allowed;
 }
 
+/* English Analysis Section */
+.wp-analyze-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin: 0;
+  padding: 0;
+}
+
+.wp-analyze-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #888;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.wp-analyze-toggle:hover {
+  color: #7C3AED;
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.wp-analyze-toggle.wp-analyze-expanded {
+  color: #7C3AED;
+}
+
+.wp-analyze-body {
+  padding: 0 10px 8px;
+  animation: wp-fadeIn 0.15s ease-out;
+}
+
+.wp-analyze-result {
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #333;
+  background: #f5f3ff;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  word-break: break-word;
+}
+
+.wp-analyze-result.wp-analyze-error {
+  color: #e53e3e;
+  background: #fff5f5;
+  border-color: rgba(229, 62, 62, 0.15);
+}
+
+.wp-analyze-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.wp-analyze-row + .wp-analyze-row {
+  margin-top: 2px;
+}
+
+.wp-analyze-label {
+  flex: 0 0 66px;
+  color: #888;
+}
+
+.wp-analyze-value {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.wp-analyze-flag {
+  color: #e53e3e;
+  font-weight: 400;
+  cursor: help;
+}
+
 /* Dark mode adaptation */
 @media (prefers-color-scheme: dark) {
   .wp-popup {
@@ -459,5 +540,33 @@
 
   .wp-ask-input:disabled {
     opacity: 0.4;
+  }
+
+  .wp-analyze-section {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .wp-analyze-toggle:hover {
+    background: rgba(124, 58, 237, 0.12);
+  }
+
+  .wp-analyze-result {
+    background: rgba(124, 58, 237, 0.1);
+    color: #d8d8e8;
+    border-color: rgba(124, 58, 237, 0.2);
+  }
+
+  .wp-analyze-result.wp-analyze-error {
+    color: #f87171;
+    background: rgba(229, 62, 62, 0.1);
+    border-color: rgba(229, 62, 62, 0.2);
+  }
+
+  .wp-analyze-value {
+    color: #f0f0ff;
+  }
+
+  .wp-analyze-flag {
+    color: #f87171;
   }
 }

@@ -206,6 +206,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  // English analysis: fast path, TypeSafe/Jev needs no Notion
+  if (request.type === 'analyzeEnglish') {
+    console.log('[划词翻译] Analyze:', (request.text || '').slice(0, 30));
+    analyzeEnglish(request.text)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(err => { console.error('[划词翻译] Analyze error:', err); sendResponse({ success: false, error: err.message }); });
+    return true;
+  }
+
+  // TypeSafe key check: fast path, validates without spending a Jev call
+  if (request.type === 'testTypesafeKey') {
+    testTypesafeKey(request.apiKey)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(err => { console.error('[划词翻译] TypeSafe test error:', err); sendResponse({ success: false, error: err.message }); });
+    return true;
+  }
+
   handleMessage(request).then(sendResponse).catch(err => sendResponse({ success: false, error: err.message }));
   return true;
 });
@@ -520,6 +537,141 @@ async function askAI(selectedText, question, conversationHistory) {
   }
 }
 
+// --- English analysis (TypeSafe / Jev) ---
+
+// Mirrors jev-study/study.py:build_questions(). Keep the two in sync when tuning.
+const JEV_MODEL = 'jev-latest';
+const JEV_QUESTIONS = {
+  is_casual_spoken: {
+    type: 'noul',
+    instructions: 'Is this passage everyday spoken English — the kind used in casual conversation — rather than written, formal, or academic English?',
+    criteria: {
+      true: 'Conversational register: contractions, direct address, everyday topics, informal vocabulary, spoken rhythm.',
+      false: 'Written register: formal, academic, literary, journalistic, or otherwise composed for reading rather than speaking.'
+    }
+  },
+  difficulty: {
+    type: 'score',
+    instructions: 'What CEFR level must a learner reach to understand this passage comfortably?',
+    criteria: [
+      'A1 — Beginner: very high-frequency words, simple present-tense sentences.',
+      'A2 — Elementary: everyday expressions, common tenses, short connected sentences.',
+      'B1 — Intermediate: main points followable; some abstract or unfamiliar vocabulary.',
+      'B2 — Upper intermediate: abstract topics, idiomatic collocations, complex sentences.',
+      'C1 — Advanced: dense idioms, register shifts, nuanced or figurative language.',
+      'C2 — Proficient: slang, cultural references, wordplay, native-level implicature.'
+    ]
+  },
+  most_valuable: {
+    type: 'choice',
+    instructions: "Which single language feature here is most worth a learner's study time?",
+    criteria: {
+      idiom_phrasal: "Idioms and phrasal verbs — e.g. 'give up on', 'get away with'.",
+      collocation: "Natural word pairings a learner would not guess — e.g. 'heavy rain', not 'strong rain'.",
+      grammar_pattern: 'Sentence structures — conditionals, inversion, ellipsis.',
+      slang: "Slang and spoken reductions — 'gonna', 'ain't', 'my bad'.",
+      functional: 'Situational functional phrases — greeting, ordering, complaining, apologising.'
+    }
+  }
+};
+
+async function analyzeEnglish(text) {
+  const settings = await getSettings();
+
+  if (!settings.typesafeApiKey) {
+    throw new Error('请先在设置中配置 TypeSafe API Key');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch('https://api.typesafe.ai/v1/systemone', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + settings.typesafeApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        state: text,
+        model: JEV_MODEL,
+        questions: JEV_QUESTIONS
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // TypeSafe reports errors as {detail: {error_type, message}}, not {error: {message}}.
+      const errData = await response.json().catch(() => ({}));
+      const detail = (errData.detail && errData.detail.message) || response.status;
+      throw new Error('TypeSafe 请求失败: ' + detail);
+    }
+
+    const data = await response.json();
+    const answers = data && data.answers;
+
+    // Fail loudly on a malformed body rather than substituting a placeholder --
+    // a fabricated reading would be indistinguishable from a real judgment.
+    if (!answers || !answers.is_casual_spoken || !answers.difficulty || !answers.most_valuable) {
+      throw new Error('TypeSafe 返回了异常结果');
+    }
+
+    return {
+      model: data.model,
+      casual: answers.is_casual_spoken.noul,
+      score: answers.difficulty.score,
+      scoreConfidence: answers.difficulty.confidence,
+      feature: answers.most_valuable.choice,
+      featureConfidence: answers.most_valuable.confidence
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('TypeSafe 请求超时，请检查网络');
+    }
+    throw err;
+  }
+}
+
+// Verify a key without spending a Jev call -- /v1/models is cheap.
+async function testTypesafeKey(apiKey) {
+  if (!apiKey) {
+    throw new Error('请先填入 API Key');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch('https://api.typesafe.ai/v1/models', {
+      headers: { 'Authorization': 'Bearer ' + apiKey },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const detail = (errData.detail && errData.detail.message) || ('HTTP ' + response.status);
+      throw new Error('API Key 无效: ' + detail);
+    }
+
+    const data = await response.json();
+    // Guard the shape rather than trusting it: a 200 with an unexpected body
+    // would otherwise crash on .map and get reported as a confusing network error.
+    const list = data && Array.isArray(data.models) ? data.models : [];
+    return { models: list.map(m => m && m.name).filter(Boolean) };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('TypeSafe 请求超时，请检查网络');
+    }
+    throw err;
+  }
+}
+
 // --- Word Collection Storage ---
 async function addWordToCollection(word, translation, sourceUrl = '', note = '') {
   const words = await getCollectedWords();
@@ -558,7 +710,7 @@ async function checkWordCollected(word) {
 }
 
 // --- Settings ---
-const DEFAULT_SETTINGS = { enabled: true, targetLang: 'zh-CN', highlightColor: '#7C3AED', enableZhToEn: false, translateEngine: 'google', deepseekApiKey: '', enableAsk: true };
+const DEFAULT_SETTINGS = { enabled: true, targetLang: 'zh-CN', highlightColor: '#7C3AED', enableZhToEn: false, translateEngine: 'google', deepseekApiKey: '', enableAsk: true, enableAnalyze: true, typesafeApiKey: '' };
 async function getSettings() {
   const result = await chrome.storage.local.get('settings');
   const merged = { ...DEFAULT_SETTINGS, ...result.settings };

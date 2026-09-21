@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const deepseekKeyRow = document.getElementById('deepseekKeyRow');
   const enableZhToEn = document.getElementById('enableZhToEn');
   const enableAsk = document.getElementById('enableAsk');
+  const enableAnalyze = document.getElementById('enableAnalyze');
+  const typesafeApiKey = document.getElementById('typesafeApiKey');
+  const testTypesafeBtn = document.getElementById('testTypesafeBtn');
+  const typesafeHint = document.getElementById('typesafeHint');
 
   const viewAllBar = document.getElementById('viewAllBar');
   const viewAllBtn = document.getElementById('viewAllBtn');
@@ -48,6 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           deepseekApiKey.value = s.deepseekApiKey || '';
           enableZhToEn.checked = s.enableZhToEn || false;
           enableAsk.checked = s.enableAsk !== false;
+          enableAnalyze.checked = s.enableAnalyze !== false;
+          typesafeApiKey.value = s.typesafeApiKey || '';
           deepseekKeyRow.style.display = (translateEngine.value === 'deepseek') ? 'flex' : 'none';
         }
         resolve();
@@ -464,6 +470,15 @@ rows + '\n' +
     saveSettings({ enableAsk: enableAsk.checked });
   });
 
+  enableAnalyze.addEventListener('change', function() {
+    saveSettings({ enableAnalyze: enableAnalyze.checked });
+  });
+
+  // Trimmed: a trailing space would silently break the Bearer header.
+  typesafeApiKey.addEventListener('input', function() {
+    saveSettings({ typesafeApiKey: typesafeApiKey.value.trim() });
+  });
+
   // --- Clear All ---
   clearAll.addEventListener('click', async function() {
     if (!confirm('确定要清空全部收藏吗？此操作不可撤销。')) return;
@@ -623,6 +638,55 @@ rows + '\n' +
     deepseekHint.className = 'notion-hint ' + (type || '');
     deepseekHint.style.display = 'block';
     setTimeout(() => { deepseekHint.style.display = 'none'; }, 5000);
+  }
+
+  // --- TypeSafe Test ---
+  testTypesafeBtn.addEventListener('click', async () => {
+    const key = typesafeApiKey.value.trim();
+    if (!key) {
+      showTypesafeHint('请输入 API Key', 'error');
+      return;
+    }
+    // Pasting the whole .env line is the usual mistake, and the API answers it with
+    // a generic 401 that gives no hint. Catch it here instead.
+    if (/^[A-Za-z_]+=/.test(key)) {
+      showTypesafeHint('只填 key 本身，不要带上 KEY= 前缀', 'error');
+      return;
+    }
+
+    testTypesafeBtn.disabled = true;
+    testTypesafeBtn.textContent = '测试中...';
+    typesafeHint.style.display = 'none';
+
+    try {
+      // Goes through the service worker rather than fetching here, so the request
+      // gets the same AbortController timeout every other provider call has. The
+      // DeepSeek test below fetches directly and has no timeout at all.
+      const res = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'testTypesafeKey', apiKey: key }, (r) => {
+          resolve(r || { success: false, error: '无响应' });
+        });
+      });
+
+      if (res && res.success) {
+        const models = (res.data && res.data.models) || [];
+        showTypesafeHint(models.length ? '连接成功: ' + models.join(', ') : '连接成功', 'success');
+      } else {
+        showTypesafeHint('连接失败: ' + ((res && res.error) || '未知错误'), 'error');
+      }
+    } catch (err) {
+      showTypesafeHint('网络错误: ' + err.message, 'error');
+    } finally {
+      testTypesafeBtn.disabled = false;
+      testTypesafeBtn.textContent = '测试';
+    }
+  });
+
+  function showTypesafeHint(text, type) {
+    typesafeHint.textContent = text;
+    typesafeHint.className = 'notion-hint ' + (type || '');
+    typesafeHint.style.display = 'block';
+    setTimeout(() => { typesafeHint.style.display = 'none'; }, 5000);
   }
 
   // --- Init ---
