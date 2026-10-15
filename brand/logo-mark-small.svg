@@ -10,10 +10,10 @@
   <!-- tile -->
   <rect width="512" height="512" rx="116" fill="url(#huaciTile)"/>
 
-  <!-- At 16px the swipe smears into a yellow blob and eats the W's legibility,
-       so the small variant drops it and scales the W up instead.
+  <!-- At 16px the swipe smears into a yellow blob and eats the M's legibility,
+       so the small variant drops it and scales the M up instead.
        The bow is the same shape as the main mark, scaled with the stroke width. -->
-  <path d="M112 150 Q 115 269 190 362 Q 187 267 256 202 Q 253 297 322 362 Q 397 269 400 150"
+  <path d="M112 362 Q 115 243 190 150 Q 187 245 256 310 Q 253 215 322 150 Q 397 243 400 362"
         fill="none" stroke="#ffffff" stroke-width="58"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

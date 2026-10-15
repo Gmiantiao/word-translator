@@ -15,14 +15,14 @@
   <rect width="512" height="512" rx="116" fill="url(#huaciTile)"/>
 
   <!-- mark: a word underlined by a highlighter swipe.
-       The four strokes of the W are bowed the same way round, so the letter
+       The four strokes of the M are bowed the same way round, so the letter
        also reads as one bent noodle. Kept subtle on purpose: at 16px the
-       curves collapse and an alternating bow turns the W into a blob. -->
+       curves collapse and an alternating bow turns the M into a blob. -->
   <g transform="translate(0,9.5) translate(256,256) scale(1.06) translate(-256,-256)">
     <g transform="rotate(-3 256 308)">
       <rect x="88" y="268" width="336" height="80" rx="40" fill="url(#huaciSwipe)"/>
     </g>
-    <path d="M128 162 Q 131 264 194 344 Q 196 263 256 208 Q 258 289 318 344 Q 381 264 384 162"
+    <path d="M128 344 Q 131 242 194 162 Q 196 243 256 298 Q 258 217 318 162 Q 381 242 384 344"
           fill="none" stroke="#ffffff" stroke-width="48"
           stroke-linecap="round" stroke-linejoin="round"/>
   </g>
