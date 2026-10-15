@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 200" width="620" height="200" role="img" aria-label="拾词 WordPicker">
+  <title>拾词 WordPicker</title>
+  <defs>
+    <linearGradient id="huaciTile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A78BFA"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+    <linearGradient id="huaciSwipe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#FBBF24"/>
+    </linearGradient>
+    <symbol id="huaciMark" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="116" fill="url(#huaciTile)"/>
+      <g transform="translate(0,9.5) translate(256,256) scale(1.06) translate(-256,-256)">
+        <g transform="rotate(-3 256 308)">
+          <rect x="88" y="268" width="336" height="80" rx="40" fill="url(#huaciSwipe)"/>
+        </g>
+        <path d="M128 162 L194 344 L256 208 L318 344 L384 162"
+              fill="none" stroke="#ffffff" stroke-width="48"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+  </defs>
+
+  <use href="#huaciMark" x="0" y="12" width="176" height="176"/>
+  <text x="212" y="112" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif"
+        font-size="82" font-weight="600" fill="#ffffff" letter-spacing="2">拾词</text>
+  <text x="216" y="152" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="25" font-weight="500" fill="#A78BFA" letter-spacing="4.5">WORDPICKER</text>
+</svg>
