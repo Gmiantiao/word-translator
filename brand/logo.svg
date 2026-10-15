@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 200" width="620" height="200" role="img" aria-label="拾词 WordPicker">
-  <title>拾词 WordPicker</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 200" width="620" height="200" role="img" aria-label="面条捞词 NoodlePicker">
+  <title>面条捞词 NoodlePicker</title>
   <defs>
     <linearGradient id="huaciTile" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#A78BFA"/>
@@ -24,7 +24,7 @@
 
   <use href="#huaciMark" x="0" y="12" width="176" height="176"/>
   <text x="212" y="112" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif"
-        font-size="82" font-weight="600" fill="#1a1a2e" letter-spacing="2">拾词</text>
+        font-size="72" font-weight="600" fill="#1a1a2e" letter-spacing="2">面条捞词</text>
   <text x="216" y="152" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="25" font-weight="500" fill="#7C3AED" letter-spacing="4.5">WORDPICKER</text>
+        font-size="25" font-weight="500" fill="#7C3AED" letter-spacing="4.5">NOODLEPICKER</text>
 </svg>

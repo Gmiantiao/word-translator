@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "拾词",
-  "version": "1.2.2",
-  "description": "浏览即拾词 — 划词翻译、收藏注释、高亮复习，中英双语皆是养分",
+  "name": "面条捞词",
+  "version": "1.3.0",
+  "description": "划词翻译 · 捞词入碗 · 高亮复习 — 浏览网页时随手捞生词，中英双语皆是养分",
   "permissions": ["activeTab", "storage", "scripting", "notifications", "alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {

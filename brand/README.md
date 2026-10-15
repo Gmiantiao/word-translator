@@ -1,10 +1,10 @@
-# 拾词 · 品牌标志
+# 面条捞词 · 品牌标志
 
-![拾词 WordPicker](png/logo@2x.png)
+![面条捞词 NoodlePicker](png/logo@2x.png)
 
 ## 概念
 
-**「被荧光笔划过的一个 W」** —— 拾词做的是两件事：在网页上**划**出词，然后**收藏**它。
+**「被荧光笔划过的一个 W」** —— 面条捞词做的是两件事：在网页上**划**出词，然后**收藏**它。
 标志把这两件事压成一个形状：字母 W（Word / 词）压在一道略微倾斜的高亮笔刷上。
 笔刷比 W 略宽、略歪，像手划出来的，不是排版排出来的。
 
@@ -46,7 +46,7 @@ brand/
   ```html
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/logo-dark.svg">
-    <img src="brand/logo.svg" alt="拾词" width="310">
+    <img src="brand/logo.svg" alt="面条捞词" width="310">
   </picture>
   ```
 
@@ -55,6 +55,6 @@ brand/
 
 ## 注意
 
-`logo.svg` / `logo-dark.svg` 里的「拾词」是文字（不是轮廓），依赖系统字体栈
+`logo.svg` / `logo-dark.svg` 里的「面条捞词」是文字（不是轮廓），依赖系统字体栈
 `PingFang SC → Hiragino Sans GB → Microsoft YaHei → Noto Sans SC`。
 若要印刷或需要绝对一致的渲染，请先转成轮廓。

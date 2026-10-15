@@ -1,4 +1,4 @@
-// Content Script for WordPicker - 划词翻译 + 收藏高亮 + AI提问
+// Content Script for NoodlePicker - 划词翻译 + 收藏高亮 + AI提问
 
 (function () {
   'use strict';

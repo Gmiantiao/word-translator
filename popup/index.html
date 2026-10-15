@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>拾词</title>
+  <title>面条捞词</title>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -11,8 +11,8 @@
     <!-- Header -->
     <div class="popup-header">
       <div class="popup-title">
-        <span class="popup-logo">📖</span>
-        <span>拾词</span>
+        <span class="popup-logo">🍜</span>
+        <span>面条捞词</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="toggleEnabled" checked>
@@ -24,11 +24,11 @@
     <div class="popup-stats">
       <div class="stat-item">
         <span class="stat-value" id="totalCount">0</span>
-        <span class="stat-label">已收藏</span>
+        <span class="stat-label">已入碗</span>
       </div>
       <div class="stat-item">
         <span class="stat-value" id="weekCount">0</span>
-        <span class="stat-label">本周新增</span>
+        <span class="stat-label">本周新捞</span>
       </div>
     </div>
 
@@ -62,16 +62,16 @@
     <!-- Word List -->
     <div class="popup-wordlist" id="wordList">
       <div class="empty-state" id="emptyState">
-        <span class="empty-icon">📝</span>
-        <p>还没有收藏词汇</p>
-        <p class="empty-hint">在网页中划选英文单词即可翻译收藏</p>
+        <span class="empty-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:block" aria-hidden="true"><path d="M7 21h34c0 9.4-7.6 17-17 17S7 30.4 7 21Z"/><path d="M3 21h42"/><path d="M17 14c2.5-2.5-2.5-4.5 0-7"/><path d="M25 14c2.5-2.5-2.5-4.5 0-7"/><path d="M33 14c2.5-2.5-2.5-4.5 0-7"/></svg></span>
+        <p>碗还空着</p>
+        <p class="empty-hint">在网页中划选英文单词，捞第一条</p>
       </div>
     </div>
 
     <!-- View All Link -->
     <div class="view-all-bar" id="viewAllBar" style="display:none;">
       <button class="btn-view-all" id="viewAllBtn">查看全部 (<span id="viewAllCount">0</span>)</button>
-      <button class="btn-view-all btn-flashcard-link" id="viewFlashcardBtn">⚡ 闪词</button>
+      <button class="btn-view-all btn-flashcard-link" id="viewFlashcardBtn">⚡ 翻面</button>
     </div>
 
     <!-- Settings -->

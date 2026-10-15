@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>全部收藏 - 拾词</title>
+  <title>全部收藏 - 面条捞词</title>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <div class="words-container">
     <!-- Header -->
     <div class="words-header">
-      <h1>📖 全部收藏</h1>
+      <h1>🍜 全部收藏</h1>
       <div class="header-actions">
         <span class="header-count" id="totalCount">0 条</span>
       </div>
@@ -28,7 +28,7 @@
       <div class="toolbar-right">
         <input type="text" id="searchInput" placeholder="搜索词汇或翻译...">
         <button class="btn btn-flashcard" id="flashcardBtn">
-          <span>⚡</span> 闪词学习
+          <span>⚡</span> 翻面学习
         </button>
         <button class="btn btn-import" id="importBtn">
           <span>📥</span> 导入
@@ -51,9 +51,9 @@
     <!-- Word List -->
     <div class="words-list" id="wordList">
       <div class="empty-state" id="emptyState">
-        <span class="empty-icon">📝</span>
-        <p>还没有收藏词汇</p>
-        <p class="empty-hint">在网页中划选英文或中文即可翻译收藏</p>
+        <span class="empty-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:block" aria-hidden="true"><path d="M7 21h34c0 9.4-7.6 17-17 17S7 30.4 7 21Z"/><path d="M3 21h42"/><path d="M17 14c2.5-2.5-2.5-4.5 0-7"/><path d="M25 14c2.5-2.5-2.5-4.5 0-7"/><path d="M33 14c2.5-2.5-2.5-4.5 0-7"/></svg></span>
+        <p>碗还空着</p>
+        <p class="empty-hint">在网页中划选英文或中文，捞第一条</p>
       </div>
     </div>
     <!-- Flashcard Modal -->

@@ -1,4 +1,4 @@
-// Popup Script for WordPicker
+// Popup Script for NoodlePicker
 
 document.addEventListener('DOMContentLoaded', async () => {
   const toggleEnabled = document.getElementById('toggleEnabled');
