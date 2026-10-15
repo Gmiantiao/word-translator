@@ -11,8 +11,9 @@
   <rect width="512" height="512" rx="116" fill="url(#huaciTile)"/>
 
   <!-- At 16px the swipe smears into a yellow blob and eats the W's legibility,
-       so the small variant drops it and scales the W up instead. -->
-  <path d="M112 150 L190 362 L256 202 L322 362 L400 150"
+       so the small variant drops it and scales the W up instead.
+       The bow is the same shape as the main mark, scaled with the stroke width. -->
+  <path d="M112 150 Q 115 269 190 362 Q 187 267 256 202 Q 253 297 322 362 Q 397 269 400 150"
         fill="none" stroke="#ffffff" stroke-width="58"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

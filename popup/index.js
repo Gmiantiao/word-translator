@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Render Stats ---
   function renderStats() {
-    totalCount.textContent = allWords.length;
+    totalCount.textContent = allWords.length + ' 条';
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const thisWeek = allWords.filter(w => w.addedAt >= oneWeekAgo).length;
     weekCount.textContent = thisWeek;
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showHint('已导出 ' + wordsToDownload.length + ' 个词汇', 'success');
+      showHint('已导出 ' + wordsToDownload.length + ' 条词汇', 'success');
     } catch (err) {
       console.error('导出失败:', err);
       showHint('导出失败，请重试', 'error');

@@ -44,6 +44,7 @@
   // --- Init ---
   async function init() {
     settings = withoutKeys(await getSettings());
+    applyHighlightColor();
     if (settings.enabled) {
       highlightCollectedWords();
     }
@@ -56,6 +57,7 @@
   function onMessage(request, sender, sendResponse) {
     if (request.type === 'settingsChanged') {
       settings = withoutKeys(request.settings);
+      applyHighlightColor();
       if (settings.enabled) {
         highlightCollectedWords();
       } else {
@@ -74,6 +76,7 @@
       if (newSettings) {
         // Raw storage value -- strip the keys before it lands in page context.
         settings = withoutKeys({ ...DEFAULT_SETTINGS, ...newSettings });
+        applyHighlightColor();
         if (settings.enabled) {
           highlightCollectedWords();
         } else {
@@ -84,6 +87,27 @@
   });
 
   // --- Settings ---
+
+  // The highlight mark is a background image, and an SVG inside one can't
+  // inherit currentColor -- so the color is baked into the data URI.
+  function noodleWaveUrl(color) {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="8" viewBox="0 0 16 8">'
+      + '<path d="M0 4 Q 4 2 8 4 T 16 4" fill="none" stroke="' + color + '" '
+      + 'stroke-width="2" stroke-linecap="round"/></svg>';
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  }
+
+  // Nothing else sets these, so without this the popup's color picker never
+  // reaches the page. Both values go into page context, so the color is
+  // validated as a hex literal rather than trusted as-is.
+  function applyHighlightColor() {
+    const stored = settings.highlightColor || '';
+    const color = /^#[0-9a-f]{3,8}$/i.test(stored) ? stored : DEFAULT_SETTINGS.highlightColor;
+    const root = document.documentElement.style;
+    root.setProperty('--wp-highlight-color', color);
+    root.setProperty('--wp-noodle-wave', noodleWaveUrl(color));
+  }
+
   async function getSettings() {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ type: 'getSettings' }, (res) => {

@@ -654,7 +654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     importConfirmBtn.disabled = false;
     importConfirmBtn.textContent = '确认导入';
     importModal.style.display = 'none';
-    showHint('成功导入 ' + imported + ' 个词条' + (parsedImports.length - newItems.length > 0 ? '，跳过 ' + (parsedImports.length - newItems.length) + ' 个重复' : ''), 'success');
+    showHint('成功导入 ' + imported + ' 条词汇' + (parsedImports.length - newItems.length > 0 ? '，跳过 ' + (parsedImports.length - newItems.length) + ' 条重复' : ''), 'success');
     await loadWords();
   });
 

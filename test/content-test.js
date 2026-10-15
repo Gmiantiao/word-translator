@@ -16,7 +16,15 @@ function makeEl(tag) {
   const el = {
     tagName: (tag || 'div').toUpperCase(),
     className: '', value: '', placeholder: '',
-    style: {}, dataset: {}, children: [],
+    // A real element always exposes a CSSStyleDeclaration here; the extension
+    // writes the highlight color onto documentElement.style via setProperty.
+    style: {
+      _props: {},
+      setProperty(name, value) { this._props[name] = String(value); },
+      getPropertyValue(name) { return this._props[name] || ''; },
+      removeProperty(name) { delete this._props[name]; }
+    },
+    dataset: {}, children: [],
     classList: {
       _s: new Set(),
       add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); },
@@ -192,6 +200,19 @@ function select(text) {
   const shortMarkup = lastPopup() ? lastPopup().innerHTML : '';
   check('English -> analysis section present', shortMarkup.includes('wp-analyze-section'));
   check('English -> collect footer still there', shortMarkup.includes('wp-collect-btn'));
+
+  // Regression guard: the highlight stylesheet reads these off documentElement,
+  // and nothing else on the page sets them. When that link was missing, the
+  // popup's color picker silently did nothing.
+  console.log('\n== highlight color reaches page context ==');
+  const rootStyle = document.documentElement.style;
+  const color = rootStyle.getPropertyValue('--wp-highlight-color');
+  check('--wp-highlight-color is set', color === '#7C3AED', color || '(unset)');
+
+  const wave = rootStyle.getPropertyValue('--wp-noodle-wave');
+  check('--wp-noodle-wave is a data URI', wave.startsWith('url("data:image/svg+xml,'),
+        wave ? wave.slice(0, 28) + '...' : '(unset)');
+  check('the wave carries that color', decodeURIComponent(wave).includes('#7C3AED'));
 
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

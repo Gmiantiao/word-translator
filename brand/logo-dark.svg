@@ -15,7 +15,7 @@
         <g transform="rotate(-3 256 308)">
           <rect x="88" y="268" width="336" height="80" rx="40" fill="url(#huaciSwipe)"/>
         </g>
-        <path d="M128 162 L194 344 L256 208 L318 344 L384 162"
+        <path d="M128 162 Q 131 264 194 344 Q 196 263 256 208 Q 258 289 318 344 Q 381 264 384 162"
               fill="none" stroke="#ffffff" stroke-width="48"
               stroke-linecap="round" stroke-linejoin="round"/>
       </g>
