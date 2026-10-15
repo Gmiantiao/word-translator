@@ -51,14 +51,14 @@
       <div class="step">
         <div class="step-number">2</div>
         <div class="step-content">
-          <h2>创建数据库并连接</h2>
-          <p>在 Notion 中创建一个新的数据库（或使用已有数据库），然后将其连接到 Integration：</p>
+          <h2>新建一个页面并连接</h2>
+          <p>在 Notion 里新建一个空白页面（随便叫什么，比如「面条捞词」），插件会在它下面建一个自己的数据库：</p>
           <ol class="step-list">
-            <li>打开数据库页面</li>
+            <li>新建一个空白页面</li>
             <li>点击右上角 <strong>···</strong> → <strong>Connections</strong> → <strong>Connect to</strong></li>
             <li>搜索并选择你刚创建的 Integration</li>
           </ol>
-          <p class="step-hint">数据库属性无需手动创建，插件连接成功后会自动补齐所需的列（单词、中文释义、音标等）。</p>
+          <p class="step-hint">不要把插件指向你自己已有的数据库。插件需要自己拥有表的列结构 —— 指向别人的库，它会往你的表里补列，或者把单词写进你别的列里。</p>
         </div>
       </div>
 
@@ -73,13 +73,13 @@
               <button class="btn-toggle-visibility" id="toggleApiKey" title="显示/隐藏">👁</button>
             </div>
             <div class="form-group">
-              <label for="databaseId">数据库 ID</label>
-              <input type="text" id="databaseId" placeholder="粘贴数据库 ID 或完整 URL">
-              <p class="form-hint">打开数据库页面，URL 格式：<br><code>https://notion.so/xxx/<strong>DATABASE_ID</strong>?v=...</code><br>也支持直接粘贴完整 URL，插件会自动提取 ID</p>
+              <label for="parentPage">页面 URL</label>
+              <input type="text" id="parentPage" placeholder="粘贴第 2 步那个页面的 URL">
+              <p class="form-hint">打开那个页面，URL 形如<br><code>https://notion.so/<strong>页面ID</strong></code><br>直接粘贴完整 URL 即可，插件会自动提取 ID</p>
             </div>
             <button class="btn-primary" id="validateBtn">
-              <span id="validateBtnText">验证并连接</span>
-              <span id="validateBtnLoading" style="display:none;">验证中...</span>
+              <span id="validateBtnText">创建数据库并连接</span>
+              <span id="validateBtnLoading" style="display:none;">创建中...</span>
             </button>
             <div class="validate-result" id="validateResult" style="display:none;"></div>
           </div>
@@ -101,18 +101,17 @@
 
     <!-- Database Properties Reference -->
     <div class="reference">
-      <h3>📋 数据库属性参考</h3>
-      <p>插件连接后会自动创建以下属性（如不存在）：</p>
+      <h3>📋 插件建立的表结构</h3>
+      <p>连接成功后，插件会在你指定的页面下建一个名为「面条捞词」的数据库，列固定为：</p>
       <table>
         <thead>
-          <tr><th>属性名</th><th>类型</th><th>说明</th></tr>
+          <tr><th>列名</th><th>类型</th><th>说明</th></tr>
         </thead>
         <tbody>
-          <tr><td>标题列</td><td>Title</td><td>收藏的英文单词/短语</td></tr>
-          <tr><td>单词</td><td>Rich Text</td><td>英文单词</td></tr>
-          <tr><td>中文释义</td><td>Rich Text</td><td>翻译结果</td></tr>
-          <tr><td>音标</td><td>Rich Text</td><td>单词音标</td></tr>
-          <tr><td>来源</td><td>URL</td><td>收藏来源网页</td></tr>
+          <tr><td>单词</td><td>Title</td><td>收藏的单词或短语</td></tr>
+          <tr><td>释义</td><td>Rich Text</td><td>翻译结果</td></tr>
+          <tr><td>注释</td><td>Rich Text</td><td>你为该词写的注释</td></tr>
+          <tr><td>来源</td><td>URL</td><td>收藏时的网页地址</td></tr>
           <tr><td>收藏时间</td><td>Date</td><td>收藏时间</td></tr>
         </tbody>
       </table>

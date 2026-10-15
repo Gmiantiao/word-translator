@@ -1,26 +1,95 @@
 // Background Service Worker for 划词翻译
 
 // === NotionClient (inlined) ===
+//
+// The extension owns the database it syncs to: it creates one inside a page the
+// user shares with the integration, then reads and writes columns by name.
+//
+// It used to adopt a database the user picked and guess its columns by type and
+// position -- which wrote vocabulary into whichever rich_text / url / date
+// columns that database already had, and PATCHed in five more when it found too
+// few. Same page in Notion afterwards: five empty columns of ours, and rows
+// whose values had gone into the user's own columns.
+
+const NOTION_VERSION = '2022-06-28';
+const NOTION_API = 'https://api.notion.com/v1';
+
+// Fixed, because createDatabase is what defines them.
+const NOTION_COLUMNS = {
+  word: '单词',
+  translation: '释义',
+  note: '注释',
+  source: '来源',
+  savedAt: '收藏时间'
+};
+
+// Stored alongside the config. v1 meant "a database the user made themselves";
+// a config without a matching version is from that era and has to be redone.
+const NOTION_CONFIG_VERSION = 2;
+
 class NotionClient {
   constructor() {
     this.apiKey = null;
     this.databaseId = null;
     this.ready = false;
-    this.dbSchema = null;
   }
 
   async init() {
-    const result = await chrome.storage.local.get(['notionApiKey', 'notionDatabaseId']);
-    this.apiKey = result.notionApiKey || null;
-    this.databaseId = result.notionDatabaseId || null;
-    this.ready = !!(this.apiKey && this.databaseId);
+    const stored = await chrome.storage.local.get(
+      ['notionApiKey', 'notionDatabaseId', 'notionConfigVersion']
+    );
+    this.apiKey = stored.notionApiKey || null;
+    this.databaseId = stored.notionDatabaseId || null;
+    // A config from before NOTION_CONFIG_VERSION points at a database whose
+    // columns are not ours, so treat it as not connected rather than syncing
+    // vocabulary into whatever columns happen to be there.
+    this.ready = !!(this.apiKey && this.databaseId
+      && stored.notionConfigVersion === NOTION_CONFIG_VERSION);
     return this.ready;
+  }
+
+  // Creates the database this extension owns, inside a page the user has shared
+  // with the integration. The caller persists the returned id.
+  async createDatabase(apiKey, parentPageId) {
+    const properties = {};
+    properties[NOTION_COLUMNS.word] = { title: {} };
+    properties[NOTION_COLUMNS.translation] = { rich_text: {} };
+    properties[NOTION_COLUMNS.note] = { rich_text: {} };
+    properties[NOTION_COLUMNS.source] = { url: {} };
+    properties[NOTION_COLUMNS.savedAt] = { date: {} };
+
+    try {
+      const response = await fetch(NOTION_API + '/databases', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + apiKey,
+          'Notion-Version': NOTION_VERSION,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          parent: { type: 'page_id', page_id: parentPageId },
+          title: [{ type: 'text', text: { content: '面条捞词' } }],
+          properties
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, error: data.message || ('HTTP ' + response.status) };
+      }
+      return { success: true, databaseId: (data.id || '').replace(/-/g, ''), url: data.url };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   }
 
   async setConfig(apiKey, databaseId) {
     this.apiKey = apiKey;
     this.databaseId = databaseId;
-    await chrome.storage.local.set({ notionApiKey: apiKey, notionDatabaseId: databaseId });
+    await chrome.storage.local.set({
+      notionApiKey: apiKey,
+      notionDatabaseId: databaseId,
+      notionConfigVersion: NOTION_CONFIG_VERSION
+    });
     this.ready = true;
   }
 
@@ -28,144 +97,37 @@ class NotionClient {
     this.apiKey = null;
     this.databaseId = null;
     this.ready = false;
-    await chrome.storage.local.remove(['notionApiKey', 'notionDatabaseId']);
+    await chrome.storage.local.remove(
+      ['notionApiKey', 'notionDatabaseId', 'notionConfigVersion']
+    );
   }
 
-  async validate() {
-    if (!this.ready) return { valid: false, error: 'Not configured' };
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      const response = await fetch('https://api.notion.com/v1/databases/' + this.databaseId + '/query', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + this.apiKey,
-          'Notion-Version': '2022-06-28',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ page_size: 1 }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      if (response.ok) {
-        const c2 = new AbortController();
-        const t2 = setTimeout(() => c2.abort(), 15000);
-
-        const dbResp = await fetch('https://api.notion.com/v1/databases/' + this.databaseId, {
-          method: 'GET',
-          headers: {
-            'Authorization': 'Bearer ' + this.apiKey,
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json'
-          },
-          signal: c2.signal
-        });
-        clearTimeout(t2);
-        if (dbResp.ok) {
-          const dbData = await dbResp.json();
-          this.dbSchema = dbData.properties || {};
-          await this.ensureDatabaseProperties();
-          const props = Object.keys(this.dbSchema).map(n => n + '(' + this.dbSchema[n].type + ')').join(', ');
-          return { valid: true, properties: props };
-        }
-        return { valid: true };
-      }
-      const errorData = await response.json();
-      return { valid: false, error: errorData.message || 'Invalid credentials' };
-    } catch (err) {
-      return { valid: false, error: err.message };
-    }
-  }
-
-  async ensureDatabaseProperties() {
-    if (!this.dbSchema) return;
-    var schema = this.dbSchema;
-    var hasTitle = false, hasUrl = false, hasDate = false, richTextCount = 0;
-    for (var name in schema) {
-      var t = schema[name].type;
-      if (t === 'title') hasTitle = true;
-      if (t === 'url') hasUrl = true;
-      if (t === 'date') hasDate = true;
-      if (t === 'rich_text') richTextCount++;
-    }
-    var newProps = {};
-    if (!hasUrl) newProps['来源'] = { url: {} };
-    if (!hasDate) newProps['收藏时间'] = { date: {} };
-    if (richTextCount < 1) newProps['单词'] = { rich_text: {} };
-    if (richTextCount < 2) newProps['中文释义'] = { rich_text: {} };
-    if (richTextCount < 3) newProps['音标'] = { rich_text: {} };
-    if (Object.keys(newProps).length === 0) return;
-    try {
-      await fetch('https://api.notion.com/v1/databases/' + this.databaseId, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + this.apiKey,
-          'Notion-Version': '2022-06-28',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ properties: newProps })
-      });
-    } catch (e) {}
-  }
-
-  async createPage(properties) {
+  // Columns are addressed by name -- there is no schema to discover, because
+  // createDatabase is what wrote it.
+  async createPage({ word, translation, note, sourceUrl }) {
     if (!this.ready) return { success: false, error: 'Not configured' };
-    const { word, translation, phonetic, sourceUrl } = properties;
-    if (!this.dbSchema) {
-      try {
-        const dbResp = await fetch('https://api.notion.com/v1/databases/' + this.databaseId, {
-          method: 'GET',
-          headers: {
-            'Authorization': 'Bearer ' + this.apiKey,
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json'
-          }
-        });
-        if (dbResp.ok) {
-          const dbData = await dbResp.json();
-          this.dbSchema = dbData.properties || {};
-          await this.ensureDatabaseProperties();
-        }
-      } catch (e) {}
-    }
-    var titleProp = null, urlProp = null, dateProp = null, richTextProps = [];
-    var schema = this.dbSchema || {};
-    for (var name in schema) {
-      var prop = schema[name];
-      if (prop.type === 'title' && !titleProp) titleProp = name;
-      else if (prop.type === 'url' && !urlProp) urlProp = name;
-      else if (prop.type === 'date' && !dateProp) dateProp = name;
-      else if (prop.type === 'rich_text') richTextProps.push(name);
-    }
-    var bodyProps = {};
-    if (titleProp) bodyProps[titleProp] = { title: [{ text: { content: (word || '').slice(0, 2000) } }] };
-    if (urlProp) bodyProps[urlProp] = { url: sourceUrl || null };
-    if (dateProp) bodyProps[dateProp] = { date: { start: new Date().toISOString() } };
-    var values = [
-      { content: (word || '').slice(0, 2000) },
-      { content: (translation || '').slice(0, 2000) },
-      { content: (phonetic || '').slice(0, 2000) }
-    ];
-    for (var i = 0; i < Math.min(richTextProps.length, values.length); i++) {
-      bodyProps[richTextProps[i]] = { rich_text: [{ text: values[i] }] };
-    }
+
+    const text = (v) => [{ text: { content: String(v || '').slice(0, 2000) } }];
+    const properties = {};
+    properties[NOTION_COLUMNS.word] = { title: text(word || '(无标题)') };
+    properties[NOTION_COLUMNS.translation] = { rich_text: text(translation) };
+    properties[NOTION_COLUMNS.note] = { rich_text: text(note) };
+    properties[NOTION_COLUMNS.source] = { url: sourceUrl || null };
+    properties[NOTION_COLUMNS.savedAt] = { date: { start: new Date().toISOString() } };
+
     try {
-      const response = await fetch('https://api.notion.com/v1/pages', {
+      const response = await fetch(NOTION_API + '/pages', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + this.apiKey,
-          'Notion-Version': '2022-06-28',
+          'Notion-Version': NOTION_VERSION,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parent: { database_id: this.databaseId }, properties: bodyProps })
+        body: JSON.stringify({ parent: { database_id: this.databaseId }, properties })
       });
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, pageId: data.id };
-      }
       const data = await response.json();
-      return { success: false, error: data.message || 'Failed' };
+      if (response.ok) return { success: true, pageId: data.id };
+      return { success: false, error: data.message || ('HTTP ' + response.status) };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -175,11 +137,10 @@ class NotionClient {
 // === Service Worker Logic ===
 let notion = null;
 
-// createPage must not run concurrently. On a cold dbSchema cache every call
-// does its own GET of the database, its own ensureDatabaseProperties PATCH and
-// then the POST -- so a burst of them blows through Notion's rate limit and
-// most come back 429. addWord no longer waits for the sync, which is what used
-// to space them out, so serialise them here instead.
+// Syncs must not run concurrently: a burst of them blows through Notion's rate
+// limit and most come back 429, and nothing reads the result. addWord no longer
+// waits for its own sync -- which is what used to space them out -- so
+// serialise here instead.
 let notionSyncQueue = Promise.resolve();
 function queueNotionSync(properties) {
   // The catch keeps one rejection from poisoning every later link.
@@ -259,14 +220,18 @@ async function handleMessage(request) {
     const added = await addWordToCollection(request.word, request.translation, request.sourceUrl, request.note);
     // Sync in the background rather than blocking the reply on it. The content
     // script only draws its highlight (and lights up the popup's star) once
-    // this reply lands, and createPage can cost two or three round-trips on a
-    // cold dbSchema cache -- so a freshly collected word took visibly long to
-    // appear, and a 100-word batch import waited on 100 of them.
+    // this reply lands, so a freshly collected word used to wait on a network
+    // round-trip before appearing -- and a 100-word batch import waited on 100.
     // Only newly added words sync: addWordToCollection no-ops on a word that is
     // already stored, and mirroring that no-op as a Notion page would leave the
     // local list deduped while the database grew duplicates.
     if (added && notion.ready) {
-      queueNotionSync({ word: request.word, translation: request.translation, phonetic: '', sourceUrl: request.sourceUrl || '' });
+      queueNotionSync({
+        word: request.word,
+        translation: request.translation,
+        note: request.note || '',
+        sourceUrl: request.sourceUrl || ''
+      });
     }
     return { success: true };
   }
@@ -323,11 +288,13 @@ async function handleMessage(request) {
     return { success: true, data: { notionReady: notion.ready, apiKey: notion.apiKey ? (notion.apiKey.slice(0, 8) + '...') : null } };
   }
 
-  if (type === 'setNotionConfig') {
-    await notion.setConfig(request.apiKey, request.databaseId);
-    const result = await notion.validate();
-    if (!result.valid) await notion.clearConfig();
-    return result;
+  if (type === 'createNotionDatabase') {
+    // Builds a database we own rather than adopting one of the user's, so the
+    // columns are known by name when writing and nothing has to be guessed.
+    const created = await notion.createDatabase(request.apiKey, request.parentPageId);
+    if (!created.success) return { valid: false, error: created.error };
+    await notion.setConfig(request.apiKey, created.databaseId);
+    return { valid: true, url: created.url };
   }
 
   if (type === 'clearNotionConfig') {
@@ -341,7 +308,9 @@ async function handleMessage(request) {
     var synced = 0, failed = 0;
     for (var i = 0; i < words.length; i++) {
       var w = words[i];
-      var res = await notion.createPage({ word: w.word, translation: w.translation, phonetic: '', sourceUrl: w.sourceUrl || '' });
+      var res = await notion.createPage({
+        word: w.word, translation: w.translation, note: w.note || '', sourceUrl: w.sourceUrl || ''
+      });
       if (res.success) synced++; else failed++;
     }
     return { success: true, synced: synced, failed: failed, total: words.length };
