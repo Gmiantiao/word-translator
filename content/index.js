@@ -426,7 +426,7 @@
           await collectWord(originalText, translation, existingNote);
           collectBtn.classList.add('wp-collected');
           collectBtn.querySelector('svg').setAttribute('fill', 'currentColor');
-          highlightWordInPage(originalText);
+          highlightWordInPage(originalText, { animate: true });
         }
       });
     }
@@ -912,8 +912,13 @@
     }, 300);
   }
 
-  function highlightWordInPage(word) {
+  function highlightWordInPage(word, opts) {
     if (!word || word.length === 0) return;
+
+    // Only the collect action asks for the draw-in, so a page load with
+    // hundreds of existing highlights stays still.
+    const animate = !!(opts && opts.animate);
+    let freshIndex = 0;
 
     const walker = document.createTreeWalker(
       document.body,
@@ -960,6 +965,7 @@
         span.textContent = match[1];
         span.dataset.wpWord = match[1].toLowerCase();
         span.title = '已收藏词汇 - 点击查看翻译';
+        if (animate) markFreshNoodle(span, freshIndex++);
         frag.appendChild(span);
 
         lastIndex = pattern.lastIndex;
@@ -983,6 +989,25 @@
         el.addEventListener('mouseleave', onHighlightLeave);
       }
     });
+  }
+
+  // Draw the noodle under a word that was just collected. The class hands the
+  // mark over to the ::after overlay in content/index.css; dropping it on
+  // animationend swaps back to the static background at identical pixels.
+  function markFreshNoodle(span, index) {
+    // Honour the OS setting. Without the animation the overlay would never
+    // finish and the class would stick, so leave the static mark alone.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // Repeated occurrences cascade instead of flashing at once.
+    span.style.setProperty('--wp-noodle-delay', Math.min(index, 6) * 0.04 + 's');
+    span.classList.add('wp-highlight--fresh');
+
+    const restore = () => span.classList.remove('wp-highlight--fresh');
+    span.addEventListener('animationend', restore, { once: true });
+    // Backstop: the class suppresses the static mark, so it must come off even
+    // if the animation never runs (backgrounded tab, throttled rendering).
+    setTimeout(restore, 1200);
   }
 
   async function onHighlightHover(e) {

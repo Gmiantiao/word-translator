@@ -230,9 +230,12 @@
    background-color (used by :hover) coexists with background-image, so never
    collapse the hover rule into a `background:` shorthand. */
 .wp-highlight {
+  /* Needed twice -- as the static mark and again inside the draw-in overlay
+     below -- so the (long) fallback URI lives in one place. */
+  --wp-noodle-fallback: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' viewBox='0 0 16 8'%3E%3Cpath d='M0 4 Q 4 2 8 4 T 16 4' fill='none' stroke='%237C3AED' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   text-decoration: none;
   padding-bottom: 4px;
-  background-image: var(--wp-noodle-wave, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' viewBox='0 0 16 8'%3E%3Cpath d='M0 4 Q 4 2 8 4 T 16 4' fill='none' stroke='%237C3AED' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"));
+  background-image: var(--wp-noodle-wave, var(--wp-noodle-fallback));
   background-repeat: repeat-x;
   background-position: left bottom;
   background-size: 16px 8px;
@@ -242,6 +245,40 @@
   cursor: pointer;
   position: relative;
   transition: background-color 0.15s ease;
+}
+
+/* Draw-in for a word the user just collected. content/index.js adds the class,
+   and only to spans created by that one action -- animating every highlight on
+   page load would set a whole article shimmering.
+
+   While the class is on, the static mark is suppressed and ::after draws the
+   same image in from the left. Both sit on the padding-box bottom edge, so
+   dropping the class on animationend hands back to the static mark without a
+   visible swap. Cross-line spans are simply left alone: an absolutely
+   positioned ::after only ever covers the first fragment. */
+.wp-highlight--fresh {
+  background-image: none;
+}
+
+.wp-highlight--fresh::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background-image: var(--wp-noodle-wave, var(--wp-noodle-fallback));
+  background-repeat: repeat-x;
+  background-size: 16px 8px;
+  pointer-events: none;
+  animation: wp-noodle-draw 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* set per span so repeated occurrences cascade instead of flashing at once */
+  animation-delay: var(--wp-noodle-delay, 0s);
+}
+
+@keyframes wp-noodle-draw {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
 }
 
 .wp-highlight:hover {
