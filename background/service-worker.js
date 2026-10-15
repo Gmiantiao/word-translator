@@ -244,9 +244,16 @@ async function handleMessage(request) {
 
   if (type === 'addWord') {
     await addWordToCollection(request.word, request.translation, request.sourceUrl, request.note);
-    // Also sync to Notion if configured
+    // Sync to Notion in the background rather than blocking the reply on it.
+    // The content script only draws its highlight (and lights up the popup's
+    // star) once this reply lands, and createPage can cost two or three
+    // round-trips on a cold dbSchema cache -- so a freshly collected word took
+    // visibly long to appear. Batch import was worse: it awaits addWord once
+    // per word, so a 100-word import waited on 100 round-trips.
+    // Nothing reads the result, and createPage reports failures as a return
+    // value rather than throwing, so there is nothing to handle here.
     if (notion.ready) {
-      await notion.createPage({ word: request.word, translation: request.translation, phonetic: '', sourceUrl: request.sourceUrl || '' });
+      notion.createPage({ word: request.word, translation: request.translation, phonetic: '', sourceUrl: request.sourceUrl || '' });
     }
     return { success: true };
   }
