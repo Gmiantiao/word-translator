@@ -3,6 +3,9 @@
 > 一次个人用 AI 做产品的完整记录。
 > 素材来自 2026-08-17 的协作会话逐轮原文与项目 git 历史,未做改写。
 > 所有可复现的验证见 [`evidence.md`](./evidence.md)。
+>
+> **本文写于扩展更名之前。** 正文保留当时的名字「拾词」,该扩展现已更名为「面条捞词」。
+> 文中引用的 commit、行号与命令均锚定到具体 commit,不随此后的改动漂移。
 
 ---
 
@@ -101,13 +104,17 @@ AI 回答:
 那版新定位的代码,真相是:
 
 ```bash
-$ for d in background content icons options popup words; do diff -rq "$d" "v2/$d"; done
+$ for d in background content icons options popup words; do git diff d36c21b:$d 54d3f36:v2/$d; done
 （无输出 —— 六个目录逐字节相同）
 
-$ diff manifest.json v2/manifest.json
-< "name": "拾词",
-> "name": "拾词 v2",
+$ diff <(git show d36c21b:manifest.json) <(git show 54d3f36:v2/manifest.json)
+3c3
+<   "name": "拾词",
+---
+>   "name": "拾词 v2",
 ```
+
+两个 commit 是锚点:`d36c21b` 是那次会话发生时代码的最后状态,`54d3f36` 是 `v2/` 归档进版本库的那次提交。比较的是两棵不可变的树,而不是两个会继续变动的工作区目录 —— 理由见 [`evidence.md`](./evidence.md) 文末。
 
 而这次协作在 git 里留下的痕迹是:
 
@@ -116,7 +123,7 @@ $ git log --oneline --since=2026-08-14 --until=2026-09-11
 （无输出）
 ```
 
-最后一次功能提交停在 2026-08-13,早于该会话。**从那天到本文档提交之前,仓库没有任何提交 —— 0 个 commit。**
+会话发生时,最后一次功能提交停在 2026-08-13,早于该会话。**从那天到本文档提交之前,仓库没有任何提交 —— 0 个 commit。**
 
 那三个产物(两份新定位文档 + 一份代码副本)生成于 8 月 17 日,此后一直躺在本地工作区,直到本文档提交时才一并进入版本库。
 
@@ -151,7 +158,7 @@ AI 说的每一句都是真的:文件确实创建了,路径确实对,确实"已�
 那三个文件现在就在这个仓库里。你可以自己跑一遍:
 
 ```bash
-$ for d in background content icons options popup words; do diff -rq "$d" "v2/$d"; done
+$ for d in background content icons options popup words; do git diff d36c21b:$d 54d3f36:v2/$d; done
 （无输出 —— 逐字节相同）
 ```
 

@@ -2,6 +2,15 @@
 
 本文列出的每条结论都可在本仓库复现。命令默认在仓库根目录执行。
 
+**所有命令都锚定到具体 commit，而不是工作区或 `HEAD`。** 两个有历史意义的锚点是：
+
+| 锚点 | 含义 | 日期 |
+|---|---|---|
+| `d36c21b` | 2026-08-17 那次协作发生时，代码的最后状态 | 2026-08-13 |
+| `54d3f36` | `v2/` 物证归档进 git 的那次提交 | 2026-09-12 |
+
+用 `git show <commit>:<path>` 读某棵树里的内容，用 `git diff <commit>:<path> <commit>:<path>` 比较两棵树——两者都不受工作区后续改动影响。这是本清单能长期成立的前提（理由见文末）。
+
 ---
 
 ## 1. 项目规模与开发周期
@@ -9,20 +18,20 @@
 开发期提交数（截至最后一次功能提交 `d36c21b`）：
 
 ```bash
-git log --oneline d36c21b | wc -l
+git rev-list --count d36c21b
 ```
 
 结果：`11`。时间跨度 **2026-06-12 15:59 → 2026-08-13 13:07**，共 62 天。
 
 > 用 `d36c21b` 而非 `HEAD` 计数，是因为本案例自身的归档提交会排在它之后；这样引用不会随文档提交而失效。
 
-完整时间线（归档提交会排在最前）：
+完整时间线（截至 `v2/` 归档；`--reverse` 是最旧在前，故归档提交排在**最后**）：
 
 ```bash
-git log --reverse --format='%ad | %s' --date=format:'%Y-%m-%d %H:%M'
+git log --reverse --format='%ad | %s' --date=format:'%Y-%m-%d %H:%M' 54d3f36
 ```
 
-开发期的前三个提交集中在 9 分钟内：
+结果 13 行。开发期的前三个提交集中在 9 分钟内：
 
 ```
 2026-06-12 15:59 | Initial commit: 拾词 Chrome 扩展 v1.1.0
@@ -33,23 +42,33 @@ git log --reverse --format='%ad | %s' --date=format:'%Y-%m-%d %H:%M'
 代码规模（JavaScript 与配置）：
 
 ```bash
-wc -l manifest.json background/*.js content/*.js popup/*.js options/*.js words/*.js
+git ls-tree -r --name-only d36c21b \
+  | grep -E '^(manifest\.json|(background|content|popup|options|words)/.*\.js)$' \
+  | while read f; do git show "d36c21b:$f"; done | wc -l
 ```
 
-结果：**2972 行**。计入页面与样式（`content/* popup/* options/* words/*`）后为 **5386 行**，全部原生实现，无框架依赖。
+结果：**2972 行**。计入页面与样式后为 **5386 行**：
+
+```bash
+git ls-tree -r --name-only d36c21b \
+  | grep -E '^(manifest\.json|(background|content|popup|options|words)/.*\.(js|css|html))$' \
+  | while read f; do git show "d36c21b:$f"; done | wc -l
+```
+
+全部原生实现，无框架依赖。
 
 ---
 
 ## 2. `v2/` 与原版代码逐字节相同
 
 ```bash
-for d in background content icons options popup words; do diff -rq "$d" "v2/$d"; done
+for d in background content icons options popup words; do git diff d36c21b:$d 54d3f36:v2/$d; done
 ```
 
 结果：**无输出**（退出码 0）—— 六个代码目录逐字节相同。
 
 ```bash
-diff manifest.json v2/manifest.json
+diff <(git show d36c21b:manifest.json) <(git show 54d3f36:v2/manifest.json)
 ```
 
 结果：仅两行不同
@@ -70,7 +89,7 @@ diff manifest.json v2/manifest.json
 ## 3. 「AI 提问」在初始提交中就已存在
 
 ```bash
-git log --oneline -S"askAI" -- content/index.js background/service-worker.js
+git log --oneline -S"askAI" d36c21b -- content/index.js background/service-worker.js
 ```
 
 结果：
@@ -95,6 +114,8 @@ git log --oneline --since=2026-08-14 --until=2026-09-11
 
 > 说明：此处用固定的日期区间而非 `--since=2026-08-17`，因为本文档自身的提交会落在该条件内，导致命令结果随文档提交而失效。区间中不含文档提交日，结论保持稳定。
 
+> 另注：2026-09-21 另有两个与本次协作无关的功能提交（`975d0bd` 划词面板接入 TypeSafe 英语判定、`c58e530` API Key 掩码）。它们落在上面区间之外，且本节其余命令均已锚定到 `d36c21b` / `54d3f36`，因此不受影响。
+
 那三个产物（`README.v2.md`、`STORE_LISTING.v2.md`、`v2/`）生成于 2026-08-17，此后一直停留在本地工作区，直到 2026-09-12 与本文档一并提交。
 
 也就是说：那次协作之后，项目在**一个月内没有产生任何提交**。
@@ -106,14 +127,31 @@ git log --oneline --since=2026-08-14 --until=2026-09-11
 功能已于 `d36c21b`（2026-08-13）移除，但代码中仍保留大量占位：
 
 ```bash
-grep -rn "phonetic" --include="*.js" background/ content/ popup/ options/ words/
+git grep -n "phonetic" d36c21b -- 'background/*.js' 'content/*.js' 'popup/*.js' 'options/*.js' 'words/*.js'
 ```
 
-典型残留：
+结果 7 处，全部集中在 `background/service-worker.js`，行号 114 / 148 / 223 / 281 / 351 / 392 / 443。其中两处：
 
-- `background/service-worker.js:97` — Notion 同步时仍会创建「音标」字段
-- `background/service-worker.js:114` — 仍解构 `phonetic` 属性
-- 多处 `phonetic: ''` 空值占位
+```
+background/service-worker.js:114:    const { word, translation, phonetic, sourceUrl } = properties;
+background/service-worker.js:148:      { content: (phonetic || '').slice(0, 2000) }
+```
+
+其余为 `phonetic: ''` 空值占位。
+
+另有一处 Notion 字段，字段名用的是**中文**，`phonetic` 检索不到，需单独检索：
+
+```bash
+git grep -n "音标" d36c21b -- 'background/*.js'
+```
+
+结果：
+
+```
+background/service-worker.js:97:    if (richTextCount < 3) newProps['音标'] = { rich_text: {} };
+```
+
+即收藏同步到 Notion 时，仍会为一个已移除的功能创建字段。
 
 同时 `README.md` 与 `README.v2.md` 中仍写着「自动获取 IPA 音标」—— **文档与代码不一致**。
 
@@ -131,7 +169,7 @@ grep -rn "phonetic" --include="*.js" background/ content/ popup/ options/ words/
 
 实际情况：
 
-- **导出**（`words/index.js:267`）只实现了 HTML，无 CSV：
+- **导出**（`words/index.js:267`，`d36c21b` 中的行号）只实现了 HTML，无 CSV：
 
   ```javascript
   const html = buildWordHtml(wordsToDownload);
@@ -139,7 +177,19 @@ grep -rn "phonetic" --include="*.js" background/ content/ popup/ options/ words/
 
 - **导入**（`words/index.js:549` 的 `parseImportText`）只支持 JSON 与行分隔（`|`、制表符、` - `、` — `），无逗号解析。
 
-全仓库检索 `csv`（不区分大小写），唯一命中是宣传页里的一句文案 `promo/04-config.html:141`，属于营销文字，非实现。
+全仓库检索 `csv`（不区分大小写，限文本文件）：
+
+```bash
+git grep -in "csv" d36c21b -- '*.md' '*.html' '*.js' '*.css' '*.json'
+```
+
+结果 3 处，**全部是文档与宣传文案，无一处是实现**：
+
+```
+README.md:49:            - **导出**：支持 HTML / CSV 格式导出收藏列表
+STORE_LISTING.md:55:     • HTML / CSV 格式导出词汇表
+promo/04-config.html:141: JSON · 文本 · CSV
+```
 
 **文档与代码不一致。**
 
@@ -154,12 +204,22 @@ grep -rn "phonetic" --include="*.js" background/ content/ popup/ options/ words/
 实际位置：
 
 ```bash
-grep -n "function showHighlightPopup" content/index.js
+git show d36c21b:content/index.js | grep -n "function showHighlightPopup"
 ```
 
 结果：`526:  async function showHighlightPopup(...)`
 
-笔记写于 2026-05-25，至 2026-08-13 最后一次提交时，所记录的行号已偏移 300 余行。
+笔记写于 2026-05-25，至 `d36c21b`（2026-08-13）时，所记录的行号已偏移 300 余行。
+
+---
+
+## 为什么所有命令都锚定到 commit
+
+本仓库同时是案例的**载体**和案例的**对象**——它会继续被开发，而每一次开发都会让「工作区 vs 工作区」的比较失去意义。
+
+这一点已经真实发生过一次：2026-09-21 的两个功能提交只改了根目录、没有同步 `v2/`，于是原先那条 `for d in …; do diff -rq "$d" "v2/$d"; done`（比较两个工作区目录）从「无输出」变成了 5 行差异，本清单第 2 节当场失效。`wc -l` 的总数、`grep` 的行号同理。
+
+改成两侧都锚到 commit 之后，命令读的是两棵不可变的树，与工作区再无关系。代价是命令变长；收益是结论不会随开发漂移。
 
 ---
 
@@ -171,4 +231,4 @@ grep -n "function showHighlightPopup" content/index.js
 ~/.claude/projects/-Users-kuai-workspace/9928ab86-0c71-49f0-91ca-5ffc55f89cef.jsonl
 ```
 
-本案例正文中引用的对话原文均出自该文件。如需将完整记录一并归档到本仓库，请显式指定来源与目标路径。
+本案例正文中引用的对话原文均出自该文件。该路径在本仓库之外，如需将完整记录一并归档到本仓库，请显式指定来源与目标路径。
