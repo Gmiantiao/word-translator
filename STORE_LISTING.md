@@ -98,10 +98,13 @@ icons/icon128.png
 
 | 文件 | 展示功能 | 大小 |
 |------|---------|------|
-| screenshots/01-translate.png | 划词翻译 · 中英互通 | 208KB |
-| screenshots/02-collect.png | 一键收藏 · 随心注释 | 185KB |
-| screenshots/03-highlight.png | 页面高亮 · 温故知新 | 372KB |
-| screenshots/04-config.png | 灵活配置 · 随心导出 | 172KB |
+| screenshots/01-translate.png | 划词即译 · 多语互通 | 247KB |
+| screenshots/02-collect.png | 一键收藏 · 注释随心 | 193KB |
+| screenshots/03-highlight.png | 页面高亮 · 温故知新 | 358KB |
+| screenshots/04-config.png | 灵活配置 · 全面掌控 | 175KB |
+
+四张都由 `promo/*.html` 渲染而来（1280×800）。改了宣传页文案后要重新渲染对应截图，
+否则截图会停留在旧文案上：`promo/01-translate.html` → `screenshots/01-translate.png`，以此类推。
 
 ### 宣传图（可选，建议添加）
 
