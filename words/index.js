@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   flashcardBtn.addEventListener('click', () => {
     if (allWords.length === 0) {
-      showHint('暂无收藏词汇，请先收藏一些词汇后再开始闪词学习', 'error');
+      showHint('暂无收藏词汇，请先收藏一些词汇后再开始翻面学习', 'error');
       return;
     }
     startFlashcard();

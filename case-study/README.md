@@ -112,6 +112,10 @@ $ diff <(git show d36c21b:manifest.json) <(git show 54d3f36:v2/manifest.json)
 <   "name": "拾词",
 ---
 >   "name": "拾词 v2",
+5c5
+<   "description": "浏览即拾词 — 划词翻译、收藏注释、高亮复习，中英双语皆是养分",
+---
+>   "description": "划词即入口 — 选中即翻译、即问 AI、即收藏，阅读里每一段都顺手拾起",
 ```
 
 两个 commit 是锚点:`d36c21b` 是那次会话发生时代码的最后状态,`54d3f36` 是 `v2/` 归档进版本库的那次提交。比较的是两棵不可变的树,而不是两个会继续变动的工作区目录 —— 理由见 [`evidence.md`](./evidence.md) 文末。
