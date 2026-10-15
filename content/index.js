@@ -93,7 +93,13 @@
   // The value lands in page context, hence the hex-literal check.
   function applyHighlightColor() {
     const stored = settings.highlightColor || '';
-    const color = /^#[0-9a-f]{3,8}$/i.test(stored) ? stored : DEFAULT_SETTINGS.highlightColor;
+    // 3/4/6/8 digits only -- a 5- or 7-digit value passes a loose {3,8} but is
+    // not a valid color, and an invalid custom property makes text-decoration-color
+    // "invalid at computed-value time", so it would fall back to currentColor
+    // rather than to the #7C3AED named in the var() fallback.
+    const color = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(stored)
+      ? stored
+      : DEFAULT_SETTINGS.highlightColor;
     document.documentElement.style.setProperty('--wp-highlight-color', color);
   }
 
@@ -978,12 +984,19 @@
     const word = e.target.dataset.wpWord;
     if (!word) return;
 
+    e.target.__wpHovered = true;
+
     // Check if there's already a tooltip
     if (e.target.querySelector('.wp-tooltip')) return;
 
     const words = await getCollectedWords();
     const entry = words.find(w => w.word.toLowerCase() === word.toLowerCase());
     if (!entry) return;
+
+    // getCollectedWords is a round-trip. If the pointer left during it,
+    // onHighlightLeave already ran -- and found no tooltip to remove -- so
+    // appending now would strand one on the page with nothing left to clear it.
+    if (!e.target.__wpHovered) return;
 
     const tooltip = document.createElement('span');
     tooltip.className = 'wp-tooltip';
@@ -992,23 +1005,37 @@
   }
 
   function onHighlightLeave(e) {
+    e.target.__wpHovered = false;
     const tooltip = e.target.querySelector('.wp-tooltip');
     if (tooltip) tooltip.remove();
   }
 
+  // Replaces a highlight span with the plain text it wrapped.
+  //
+  // Reads only the span's OWN text nodes. The hover tooltip is a child of the
+  // span, so el.textContent would fold the translation into the page for good --
+  // the span is replaced by exactly this string.
+  //
+  // The text is restored verbatim, newlines included: it was a substring of the
+  // original node, so anything else (the \n stripping removeHighlightForWord
+  // used to do) rewrites the page instead of unwrapping it.
+  function unwrapHighlight(el) {
+    let text = '';
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) text += node.textContent;
+    }
+    // parentNode is null if the page re-rendered that subtree in the meantime.
+    if (el.parentNode) el.parentNode.replaceChild(document.createTextNode(text), el);
+  }
+
   function removeHighlightForWord(word) {
     const normalisedKey = word.toLowerCase();
-    document.querySelectorAll(`.wp-highlight[data-wp-word="${CSS.escape(normalisedKey)}"]`).forEach(el => {
-      const textNode = document.createTextNode(el.textContent.replace(/\n/g, ''));
-      el.parentNode.replaceChild(textNode, el);
-    });
+    document.querySelectorAll(`.wp-highlight[data-wp-word="${CSS.escape(normalisedKey)}"]`)
+      .forEach(el => unwrapHighlight(el));
   }
 
   function removeAllHighlights() {
-    document.querySelectorAll('.wp-highlight').forEach(el => {
-      const textNode = document.createTextNode(el.textContent);
-      el.parentNode.replaceChild(textNode, el);
-    });
+    document.querySelectorAll('.wp-highlight').forEach(el => unwrapHighlight(el));
   }
 
   // --- Observe DOM changes (async / SPA content) ---

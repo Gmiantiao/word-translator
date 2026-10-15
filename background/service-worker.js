@@ -175,6 +175,19 @@ class NotionClient {
 // === Service Worker Logic ===
 let notion = null;
 
+// createPage must not run concurrently. On a cold dbSchema cache every call
+// does its own GET of the database, its own ensureDatabaseProperties PATCH and
+// then the POST -- so a burst of them blows through Notion's rate limit and
+// most come back 429. addWord no longer waits for the sync, which is what used
+// to space them out, so serialise them here instead.
+let notionSyncQueue = Promise.resolve();
+function queueNotionSync(properties) {
+  // The catch keeps one rejection from poisoning every later link.
+  notionSyncQueue = notionSyncQueue
+    .then(() => notion.createPage(properties))
+    .catch(() => {});
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   notion = new NotionClient();
   await notion.init();
@@ -243,17 +256,17 @@ async function handleMessage(request) {
   const type = request.type;
 
   if (type === 'addWord') {
-    await addWordToCollection(request.word, request.translation, request.sourceUrl, request.note);
-    // Sync to Notion in the background rather than blocking the reply on it.
-    // The content script only draws its highlight (and lights up the popup's
-    // star) once this reply lands, and createPage can cost two or three
-    // round-trips on a cold dbSchema cache -- so a freshly collected word took
-    // visibly long to appear. Batch import was worse: it awaits addWord once
-    // per word, so a 100-word import waited on 100 round-trips.
-    // Nothing reads the result, and createPage reports failures as a return
-    // value rather than throwing, so there is nothing to handle here.
-    if (notion.ready) {
-      notion.createPage({ word: request.word, translation: request.translation, phonetic: '', sourceUrl: request.sourceUrl || '' });
+    const added = await addWordToCollection(request.word, request.translation, request.sourceUrl, request.note);
+    // Sync in the background rather than blocking the reply on it. The content
+    // script only draws its highlight (and lights up the popup's star) once
+    // this reply lands, and createPage can cost two or three round-trips on a
+    // cold dbSchema cache -- so a freshly collected word took visibly long to
+    // appear, and a 100-word batch import waited on 100 of them.
+    // Only newly added words sync: addWordToCollection no-ops on a word that is
+    // already stored, and mirroring that no-op as a Notion page would leave the
+    // local list deduped while the database grew duplicates.
+    if (added && notion.ready) {
+      queueNotionSync({ word: request.word, translation: request.translation, phonetic: '', sourceUrl: request.sourceUrl || '' });
     }
     return { success: true };
   }
@@ -774,9 +787,10 @@ async function testDeepseekKey(apiKey) {
 async function addWordToCollection(word, translation, sourceUrl = '', note = '') {
   const words = await getCollectedWords();
   const key = word.toLowerCase().trim();
-  if (words.some(w => w.word.toLowerCase() === key)) return;
+  if (words.some(w => w.word.toLowerCase() === key)) return false;
   words.push({ word: word.trim(), translation: translation, sourceUrl: sourceUrl, note: note || '', addedAt: Date.now() });
   await chrome.storage.local.set({ collectedWords: words });
+  return true;
 }
 
 async function updateWordNote(word, note) {

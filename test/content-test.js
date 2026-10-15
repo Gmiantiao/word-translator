@@ -88,6 +88,9 @@ const responses = {
     data: {
       enabled: true, enableAnalyze: true, enableAsk: true, enableZhToEn: true,
       targetLang: 'zh-CN',
+      // Deliberately not the default: asserting the default would also pass if
+      // the getSettings plumbing were removed entirely (see the check below).
+      highlightColor: '#0d9488',
       // Masked, as the worker now sends them -- truthy is all this script needs.
       typesafeApiKey: '····ABCD', deepseekApiKey: '····WXYZ'
     }
@@ -206,7 +209,7 @@ function select(text) {
   // popup's color picker silently did nothing.
   console.log('\n== highlight color reaches page context ==');
   const color = document.documentElement.style.getPropertyValue('--wp-highlight-color');
-  check('--wp-highlight-color is set', color === '#7C3AED', color || '(unset)');
+  check('the saved color reaches documentElement', color === '#0d9488', color || '(unset)');
 
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

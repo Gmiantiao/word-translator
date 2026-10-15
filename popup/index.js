@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     totalCount.textContent = allWords.length + ' 条';
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const thisWeek = allWords.filter(w => w.addedAt >= oneWeekAgo).length;
-    weekCount.textContent = thisWeek;
+    weekCount.textContent = thisWeek + ' 条';
   }
 
   // --- Render Word List ---
